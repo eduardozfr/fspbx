@@ -35,6 +35,35 @@ ensure_laravel_directories() {
     touch /var/www/fspbx/storage/logs/laravel.log
 }
 
+ensure_module_statuses_file() {
+    local status_file="/var/www/fspbx/modules_statuses.json"
+
+    if [ -f "$status_file" ]; then
+        return 0
+    fi
+
+    if [ ! -d "/var/www/fspbx/Modules" ]; then
+        printf "{}\n" > "$status_file"
+        return 0
+    fi
+
+    local first=1
+    printf "{\n" > "$status_file"
+
+    for module_dir in /var/www/fspbx/Modules/*; do
+        [ -d "$module_dir" ] || continue
+
+        if [ $first -eq 0 ]; then
+            printf ",\n" >> "$status_file"
+        fi
+
+        printf "  \"%s\": true" "$(basename "$module_dir")" >> "$status_file"
+        first=0
+    done
+
+    printf "\n}\n" >> "$status_file"
+}
+
 # Composer downloads can fail transiently on fresh servers, so retry a few times.
 run_composer_install() {
     local attempt=1
@@ -279,6 +308,18 @@ if [ $? -eq 0 ]; then
 else
     print_error "Error occurred while changing directory to /var/www/fspbx/."
     exit 1
+fi
+
+ensure_module_statuses_file
+if [ $? -eq 0 ]; then
+    print_success "Module status manifest prepared successfully."
+else
+    print_error "Error occurred while preparing modules_statuses.json."
+    exit 1
+fi
+
+if [ -z "${NODE_OPTIONS:-}" ]; then
+    export NODE_OPTIONS="--max-old-space-size=${FS_PBX_NODE_BUILD_MEMORY:-2048}"
 fi
 
 print_success "Installing Nginx..."

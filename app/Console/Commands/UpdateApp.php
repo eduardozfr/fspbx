@@ -34,6 +34,7 @@ use App\Console\Commands\Updates\Update0969;
 use App\Console\Commands\Updates\Update0970;
 use App\Services\GitHubApiService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
 class UpdateApp extends Command
@@ -158,8 +159,9 @@ class UpdateApp extends Command
         $this->runArtisanCommand('storage:link', ['--force' => true]);
 
         // Update Vue files
-        $this->executeCommand('npm install');
-        $this->executeCommand('npm run build', 300);
+        $this->ensureModuleStatusesFile();
+        $this->executeCommand('npm install --no-audit --no-fund', 1800, $this->buildNpmEnvironment());
+        $this->executeCommand('npm run build', 1800, $this->buildNpmEnvironment());
 
         // Output the current working directory
         $currentDirectory = $this->getCurrentDirectory();
@@ -172,11 +174,13 @@ class UpdateApp extends Command
     }
 
 
-    protected function executeCommand($command, $timeout = 60)
+    protected function executeCommand($command, $timeout = 60, array $env = [])
     {
-        $process = Process::fromShellCommandline($command);
+        $process = Process::fromShellCommandline($command, base_path(), $env ?: null);
         $process->setTimeout($timeout); // Set the timeout
-        $process->setTty(true); // Enable TTY mode to preserve color output
+        if ($this->supportsTty()) {
+            $process->setTty(true); // Enable TTY mode to preserve color output
+        }
         $process->run(function ($type, $buffer) {
             if (Process::ERR === $type) {
                 $this->error($buffer);
@@ -189,6 +193,65 @@ class UpdateApp extends Command
             $this->error("Command '$command' failed.");
             exit(1);
         }
+    }
+
+    protected function supportsTty(): bool
+    {
+        if (function_exists('stream_isatty')) {
+            return @stream_isatty(STDOUT);
+        }
+
+        if (function_exists('posix_isatty')) {
+            return @posix_isatty(STDOUT);
+        }
+
+        return false;
+    }
+
+    protected function buildNpmEnvironment(): array
+    {
+        return [
+            'CI' => 'true',
+            'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
+        ];
+    }
+
+    protected function resolveNodeBuildMemoryLimit(): int
+    {
+        $configuredLimit = (int) (getenv('FS_PBX_NODE_BUILD_MEMORY') ?: 2048);
+
+        return $configuredLimit > 0 ? $configuredLimit : 2048;
+    }
+
+    protected function ensureModuleStatusesFile(): void
+    {
+        $modulesPath = base_path('Modules');
+        $moduleStatusesPath = base_path('modules_statuses.json');
+
+        if (!File::isDirectory($modulesPath)) {
+            if (!File::exists($moduleStatusesPath)) {
+                File::put($moduleStatusesPath, "{}\n");
+            }
+
+            return;
+        }
+
+        $defaultStatuses = [];
+        foreach (File::directories($modulesPath) as $directory) {
+            $defaultStatuses[basename($directory)] = true;
+        }
+
+        $existingStatuses = [];
+        if (File::exists($moduleStatusesPath)) {
+            $decodedStatuses = json_decode(File::get($moduleStatusesPath), true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedStatuses)) {
+                $existingStatuses = $decodedStatuses;
+            }
+        }
+
+        $moduleStatuses = array_merge($defaultStatuses, $existingStatuses);
+        File::put($moduleStatusesPath, json_encode($moduleStatuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     }
 
     /**

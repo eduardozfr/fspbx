@@ -318,9 +318,12 @@ class FSPBXInitialDBSeed extends Command
 
     private function installAndBuildNpm()
     {
+        $this->ensureModuleStatusesFile();
+        $npmEnvironment = $this->buildNpmEnvironment();
+
         $this->info("Installing NPM dependencies...");
-        $installProcess = new Process(['npm', 'install'], base_path());
-        $installProcess->setTimeout(300);
+        $installProcess = new Process(['npm', 'install', '--no-audit', '--no-fund'], base_path(), $npmEnvironment);
+        $installProcess->setTimeout(1800);
         $installProcess->run();
 
         if (!$installProcess->isSuccessful()) {
@@ -335,8 +338,8 @@ class FSPBXInitialDBSeed extends Command
         $spinnerChars = ['-', '\\', '|', '/']; // Spinner animation characters
         $index = 0;
 
-        $buildProcess = new Process(['npm', 'run', 'build'], base_path());
-        $buildProcess->setTimeout(300);
+        $buildProcess = new Process(['npm', 'run', 'build'], base_path(), $npmEnvironment);
+        $buildProcess->setTimeout(1800);
         $buildProcess->start();
 
         while ($buildProcess->isRunning()) {
@@ -350,6 +353,56 @@ class FSPBXInitialDBSeed extends Command
         }
 
         echo "\r✅ Frontend assets built successfully!          \n";
+    }
+
+    private function buildNpmEnvironment(): array
+    {
+        return [
+            'CI' => 'true',
+            'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
+        ];
+    }
+
+    private function resolveNodeBuildMemoryLimit(): int
+    {
+        $configuredLimit = (int) (getenv('FS_PBX_NODE_BUILD_MEMORY') ?: 2048);
+
+        return $configuredLimit > 0 ? $configuredLimit : 2048;
+    }
+
+    private function ensureModuleStatusesFile(): void
+    {
+        $modulesPath = base_path('Modules');
+        $moduleStatusesPath = base_path('modules_statuses.json');
+
+        if (!File::isDirectory($modulesPath)) {
+            if (!File::exists($moduleStatusesPath)) {
+                File::put($moduleStatusesPath, "{}\n");
+            }
+
+            return;
+        }
+
+        $defaultStatuses = [];
+        foreach (File::directories($modulesPath) as $directory) {
+            $defaultStatuses[basename($directory)] = true;
+        }
+
+        $existingStatuses = [];
+        if (File::exists($moduleStatusesPath)) {
+            $decodedStatuses = json_decode(File::get($moduleStatusesPath), true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedStatuses)) {
+                $existingStatuses = $decodedStatuses;
+            } else {
+                $this->warn('modules_statuses.json is invalid. Rebuilding it from installed modules.');
+            }
+        } else {
+            $this->warn('modules_statuses.json not found. Creating a default file from installed modules.');
+        }
+
+        $moduleStatuses = array_merge($defaultStatuses, $existingStatuses);
+        File::put($moduleStatusesPath, json_encode($moduleStatuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
     }
 
     private function updatePermissions()

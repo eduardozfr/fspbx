@@ -15,7 +15,11 @@ yarn-error.log
 /.idea
 /.vscode
 /Modules/*
-modules_statuses.json
+!/Modules/CallCenter/
+!/Modules/CallCenter/**
+!/Modules/Dialer/
+!/Modules/Dialer/**
+!modules_statuses.json
 
 # Scribe generated docs/cache
 .scribe/
