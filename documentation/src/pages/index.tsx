@@ -119,7 +119,7 @@ export default function Home(): ReactNode {
         {
             name: 'Open Source',
             id: 'tier-open-source',
-            href: 'https://github.com/eduardozfr/fspbx-main',
+            href: 'https://github.com/eduardozfr/fspbx',
             priceMonthly: '$0',
             description: "FS PBX is and will always be open source. As part of our commitment to the community, we provide a free support tier available to everyone. Community support is available through forums and social media",
             features: ['Community support', 'Free bug reports on GitHub', 'Free forever', 'Call Center and Dialer included'],
@@ -193,7 +193,7 @@ export default function Home(): ReactNode {
                                 </p>
                                 <div className="mt-10 flex items-center justify-center gap-x-6">
                                     <a
-                                        href="https://github.com/eduardozfr/fspbx-main"
+                                        href="https://github.com/eduardozfr/fspbx"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold !text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
@@ -330,7 +330,7 @@ export default function Home(): ReactNode {
                                             </p>
                                             <div className="mt-6">
                                                 <a
-                                                    href="https://github.com/eduardozfr/fspbx-main"
+                                                    href="https://github.com/eduardozfr/fspbx"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold !text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
@@ -369,7 +369,7 @@ export default function Home(): ReactNode {
                                             </p>
                                             <div className="mt-6">
                                                 <a
-                                                    href="https://github.com/eduardozfr/fspbx-main"
+                                                    href="https://github.com/eduardozfr/fspbx"
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold !text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
@@ -535,7 +535,7 @@ export default function Home(): ReactNode {
                                 </div>
 
                                 <a
-                                    href="https://github.com/eduardozfr/fspbx-main"
+                                    href="https://github.com/eduardozfr/fspbx"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="rounded-md px-3.5 py-2 text-sm/6 font-semibold text-indigo-600 dark:text-indigo-400 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-400 hover:ring-indigo-300 dark:hover:ring-indigo-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 hover:underline"
@@ -608,7 +608,7 @@ export default function Home(): ReactNode {
                                 </div>
                                 <div className="mt-10 flex">
                                     <a
-                                        href="https://github.com/eduardozfr/fspbx-main"
+                                        href="https://github.com/eduardozfr/fspbx"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold !text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"

@@ -17,7 +17,7 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 class Handler extends ExceptionHandler
 {
-    protected string $apiDocumentationUrl = 'https://eduardozfr.github.io/fspbx-main/docs/api/v1/errors/';
+    protected string $apiDocumentationUrl = 'https://eduardozfr.github.io/fspbx/docs/api/v1/errors/';
 
     public function register(): void
     {

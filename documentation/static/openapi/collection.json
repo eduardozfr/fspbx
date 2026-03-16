@@ -219,7 +219,7 @@
                         {
                             "header": [],
                             "code": 400,
-                            "body": "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"message\": \"Please enter a domain label.\",\n    \"code\": \"invalid_parameter\",\n    \"param\": \"domain_description\",\n    \"doc_url\": \"https:\/\/eduardozfr.github.io\/fspbx-main\/docs\/api\/v1\/errors\/\"\n  }\n}",
+                            "body": "{\n  \"error\": {\n    \"type\": \"invalid_request_error\",\n    \"message\": \"Please enter a domain label.\",\n    \"code\": \"invalid_parameter\",\n    \"param\": \"domain_description\",\n    \"doc_url\": \"https:\/\/eduardozfr.github.io\/fspbx\/docs\/api\/v1\/errors\/\"\n  }\n}",
                             "name": "Validation error"
                         },
                         {

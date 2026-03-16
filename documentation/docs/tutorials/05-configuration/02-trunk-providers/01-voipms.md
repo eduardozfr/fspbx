@@ -56,7 +56,7 @@ Extensions - Accounts > Extensions
 This should give you inbound, and outbound calling capabilities.
 
 ## 2. Troubleshooting
-* Github (https://github.com/eduardozfr/fspbx-main/issues)
+* Github (https://github.com/eduardozfr/fspbx/issues)
 
 ## Conclusion
 By following these steps, you will have a fully working system.

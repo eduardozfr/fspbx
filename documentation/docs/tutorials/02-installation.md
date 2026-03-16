@@ -20,7 +20,7 @@ Getting started with FS PBX is straightforward.
 1. Download and run the installer from this repository:
 
 ```bash
-wget -O- https://raw.githubusercontent.com/eduardozfr/fspbx-main/main/install/install-fspbx.sh | bash
+wget -O- https://raw.githubusercontent.com/eduardozfr/fspbx/main/install/install-fspbx.sh | bash
 ```
 
 2. Access the server using your domain or hostname after the installer completes.

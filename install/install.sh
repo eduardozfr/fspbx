@@ -10,6 +10,57 @@ print_error() {
     echo -e "\e[31m$1 \e[0m"  # Red text
 }
 
+# Function to print warning message
+print_warn() {
+    echo -e "\e[33m$1 \e[0m"  # Yellow text
+}
+
+# Ensure Laravel writable directories exist before Composer/Artisan run.
+ensure_laravel_directories() {
+    local paths=(
+        "/var/www/fspbx/bootstrap/cache"
+        "/var/www/fspbx/public/resources"
+        "/var/www/fspbx/storage/app/public"
+        "/var/www/fspbx/storage/framework/cache/data"
+        "/var/www/fspbx/storage/framework/sessions"
+        "/var/www/fspbx/storage/framework/testing"
+        "/var/www/fspbx/storage/framework/views"
+        "/var/www/fspbx/storage/logs"
+    )
+
+    for path in "${paths[@]}"; do
+        mkdir -p "$path"
+    done
+
+    touch /var/www/fspbx/storage/logs/laravel.log
+}
+
+# Composer downloads can fail transiently on fresh servers, so retry a few times.
+run_composer_install() {
+    local attempt=1
+    export COMPOSER_ALLOW_SUPERUSER=1
+    export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-2000}"
+    export COMPOSER_MEMORY_LIMIT="-1"
+
+    while [ $attempt -le 3 ]; do
+        print_success "Installing Composer dependencies (attempt $attempt/3)..."
+
+        if composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction; then
+            return 0
+        fi
+
+        if [ $attempt -lt 3 ]; then
+            print_warn "Composer install failed. Clearing cache and retrying in 15 seconds..."
+            composer clear-cache >/dev/null 2>&1 || true
+            sleep 15
+        fi
+
+        attempt=$((attempt + 1))
+    done
+
+    return 1
+}
+
 # Detect OS codename
 OS_CODENAME=$(lsb_release -sc 2>/dev/null || echo "")
 echo "Detected OS_CODENAME=$OS_CODENAME"
@@ -381,16 +432,29 @@ fi
 
 
 # Copy .env.example to .env
-cp .env.example .env
+print_success "Preparing Laravel writable directories..."
+ensure_laravel_directories
 if [ $? -eq 0 ]; then
-    print_success ".env file created successfully from .env.example."
+    print_success "Laravel writable directories prepared successfully."
 else
-    print_error "Error occurred while copying .env.example to .env."
+    print_error "Error occurred while preparing Laravel writable directories."
     exit 1
 fi
 
+if [ ! -f .env ]; then
+    cp .env.example .env
+    if [ $? -eq 0 ]; then
+        print_success ".env file created successfully from .env.example."
+    else
+        print_error "Error occurred while copying .env.example to .env."
+        exit 1
+    fi
+else
+    print_success ".env file already exists. Keeping the current configuration."
+fi
+
 # Install Composer dependencies without interaction
-composer install --no-dev --prefer-dist --optimize-autoloader --no-progress --no-interaction
+run_composer_install
 if [ $? -eq 0 ]; then
     print_success "Composer dependencies installed successfully."
 else
@@ -399,7 +463,7 @@ else
 fi
 
 # Generate application key
-php artisan key:generate
+php artisan key:generate --force
 if [ $? -eq 0 ]; then
     print_success "Application key generated successfully."
 else
@@ -555,7 +619,11 @@ fi
 
 
 # Create a symbolic link from "public/storage" to "storage/app/public"
-php artisan storage:link
+if [ -e /var/www/fspbx/public/storage ] && [ ! -L /var/www/fspbx/public/storage ]; then
+    rm -rf /var/www/fspbx/public/storage
+fi
+
+php artisan storage:link --force
 if [ $? -eq 0 ]; then
     print_success "Storage link created successfully."
 else
@@ -564,7 +632,8 @@ else
 fi
 
 # Copy assets to storage/app/public
-sudo cp /var/www/fspbx/install/assets/* /var/www/fspbx/storage/app/public/
+mkdir -p /var/www/fspbx/storage/app/public
+sudo cp -R /var/www/fspbx/install/assets/. /var/www/fspbx/storage/app/public/
 if [ $? -eq 0 ]; then
     print_success "Assets copied to storage/app/public successfully."
 else

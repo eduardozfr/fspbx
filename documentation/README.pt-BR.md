@@ -24,6 +24,6 @@ yarn build
 
 ## Observacoes
 
-- As referencias de repositorio foram atualizadas para `eduardozfr/fspbx-main`.
+- As referencias de repositorio foram atualizadas para `eduardozfr/fspbx`.
 - O workspace agora inclui arquivos complementares em PT-BR para os guias principais.
-- Se a publicacao for feita pelo GitHub Pages, a URL esperada do projeto e `https://eduardozfr.github.io/fspbx-main/`.
+- Se a publicacao for feita pelo GitHub Pages, a URL esperada do projeto e `https://eduardozfr.github.io/fspbx/`.

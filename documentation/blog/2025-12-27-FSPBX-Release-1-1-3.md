@@ -4,7 +4,7 @@ FS PBX provides a modern, RESTful API (v1) that enables programmatic access to c
 <!-- truncate -->
 
 Official documentation:  
-https://eduardozfr.github.io/fspbx-main/docs/api/v1/fs-pbx-api/
+https://eduardozfr.github.io/fspbx/docs/api/v1/fs-pbx-api/
 
 ---
 

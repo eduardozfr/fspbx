@@ -38,3 +38,11 @@ Broadcast::channel('extension.{extensionUuid}', function ($user, $extensionUuid)
     return true;
     return $user->extension_uuid === $extensionUuid; // Adjust based on your Auth logic
 });
+
+Broadcast::channel('dialer.domain.{domainUuid}', function ($user, $domainUuid) {
+    return $user->domain_uuid === $domainUuid || isSuperAdmin();
+});
+
+Broadcast::channel('call-center.domain.{domainUuid}', function ($user, $domainUuid) {
+    return $user->domain_uuid === $domainUuid || isSuperAdmin();
+});

@@ -59,6 +59,10 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         },
+        "exclude-from-classmap": [
+            "app/Console/Daemons/cdr_import.php",
+            "app/Console/Daemons/fs_cdr_service.php"
+        ],
         "files": [
             "app/helpers.php",
             "public/resources/classes/cache.php",

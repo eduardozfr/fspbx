@@ -24,6 +24,6 @@ yarn build
 
 ## Notes
 
-- Repository references were updated to `eduardozfr/fspbx-main`.
+- Repository references were updated to `eduardozfr/fspbx`.
 - The documentation workspace now ships with PT-BR companion files for the main onboarding guides.
-- If you publish via GitHub Pages, the expected project URL is `https://eduardozfr.github.io/fspbx-main/`.
+- If you publish via GitHub Pages, the expected project URL is `https://eduardozfr.github.io/fspbx/`.

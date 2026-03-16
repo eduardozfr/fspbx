@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set error handling
-set -e
+set -euo pipefail
 
 # Function to print success message
 print_success() {
@@ -41,6 +41,8 @@ fi
 INSTALL_DIR="/var/www/fspbx"
 PUBLIC_DIR="$INSTALL_DIR/public"
 BACKUP_DIR="/var/www/fspbx_backup_$(date +%Y%m%d_%H%M%S)"
+REPO_URL="https://github.com/eduardozfr/fspbx.git"
+REPO_BRANCH="main"
 export PHP_VERSION="8.1"
 export FREESWITCH_VERSION="v1.10"
 
@@ -67,20 +69,26 @@ print_success "Latest FusionPBX version: $FUSIONPBX_VERSION"
 # Construct the download URL
 FUSIONPBX_RELEASE="https://github.com/nemerald-voip/fusionpbx/archive/refs/tags/${FUSIONPBX_VERSION}.tar.gz"
 
-# Backup existing installation if the directory is not empty
-if [ -d "$INSTALL_DIR" ] && [ "$(ls -A $INSTALL_DIR 2>/dev/null)" ]; then
+# Backup existing installation if the directory is populated but not already a git checkout.
+if [ -d "$INSTALL_DIR/.git" ]; then
+    print_success "Existing FS PBX repository detected in $INSTALL_DIR. Reusing it."
+elif [ -d "$INSTALL_DIR" ] && [ "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
     print_success "Backing up existing installation to $BACKUP_DIR..."
-    mv $INSTALL_DIR $BACKUP_DIR
+    mv "$INSTALL_DIR" "$BACKUP_DIR"
     print_success "Backup completed: $BACKUP_DIR"
 fi
 
 # Clone FS PBX repository
-print_success "Cloning FS PBX repository..."
-git clone --depth 1 https://github.com/eduardozfr/fspbx-main.git $INSTALL_DIR
+print_success "Cloning FS PBX repository from $REPO_URL (branch: $REPO_BRANCH)..."
+if [ ! -d "$INSTALL_DIR/.git" ]; then
+    git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_DIR"
+else
+    print_success "Repository already exists, skipping clone."
+fi
 print_success "FS PBX repository cloned successfully."
 
 # Ensure public directory exists
-mkdir -p $PUBLIC_DIR
+mkdir -p "$PUBLIC_DIR"
 
 # Download the specified FusionPBX release
 print_success "Downloading FusionPBX v$FUSIONPBX_VERSION release..."
@@ -94,6 +102,6 @@ print_success "FusionPBX v$FUSIONPBX_VERSION files extracted successfully."
 
 # Run the FS PBX main installer script
 print_success "Running FS PBX installation script..."
-bash $INSTALL_DIR/install/install.sh
+bash "$INSTALL_DIR/install/install.sh"
 print_success "FS PBX installation completed successfully!"
 

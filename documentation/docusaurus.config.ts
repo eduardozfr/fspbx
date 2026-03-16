@@ -19,13 +19,13 @@ const config: Config = {
     url: 'https://eduardozfr.github.io',
     // Set the /<baseUrl>/ pathname under which your site is served
     // For GitHub pages deployment, it is often '/<projectName>/'
-    baseUrl: '/fspbx-main/',
+    baseUrl: '/fspbx/',
     trailingSlash: true,
 
     // GitHub pages deployment config.
     // If you aren't using GitHub pages, you don't need these.
     organizationName: 'eduardozfr', // Usually your GitHub org/user name.
-    projectName: 'fspbx-main', // Usually your repo name.
+    projectName: 'fspbx', // Usually your repo name.
 
     onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'throw',
@@ -112,7 +112,7 @@ const config: Config = {
                     position: "left",
                 },
                 {
-                    href: 'https://github.com/eduardozfr/fspbx-main',
+                    href: 'https://github.com/eduardozfr/fspbx',
                     label: 'GitHub',
                     position: 'right',
                 },
@@ -152,7 +152,7 @@ const config: Config = {
                         },
                         {
                             label: 'GitHub',
-                            href: 'https://github.com/eduardozfr/fspbx-main',
+                            href: 'https://github.com/eduardozfr/fspbx',
                         },
                     ],
                 },

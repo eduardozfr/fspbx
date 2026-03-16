@@ -13,6 +13,8 @@ use Spatie\WebhookClient\Models\WebhookCall;
 use App\Jobs\SendNewVoicemailNotificationBySms;
 use App\Jobs\SendNewVoicemailNotificationByEmail;
 use App\Services\CallTranscription\CallTranscriptionService;
+use Modules\CallCenter\Services\CallCenterService;
+use Modules\Dialer\Services\DialerService;
 use Spatie\WebhookClient\Jobs\ProcessWebhookJob as SpatieProcessWebhookJob;
 
 class ProcessFreeswitchWebhookJob extends SpatieProcessWebhookJob
@@ -81,6 +83,12 @@ class ProcessFreeswitchWebhookJob extends SpatieProcessWebhookJob
         $this->queue = match ($event) {
             'send_vm_sms_notification'   => 'messages',
             'send_vm_email_notification' => 'emails',
+            'dialer_attempt_updated',
+            'dialer_amd_result',
+            'callcenter_member_queued',
+            'callcenter_member_answered',
+            'callcenter_member_abandoned',
+            'callcenter_callback_requested' => 'default',
             // 'transcribe_call'            => 'transcriptions',
             default                      => 'default',
         };
@@ -113,6 +121,28 @@ class ProcessFreeswitchWebhookJob extends SpatieProcessWebhookJob
                     case 'transcribe_call':
                         $response = $this->transcribeCall($data);
 
+                        break;
+
+                    case 'dialer_attempt_updated':
+                    case 'dialer_amd_result':
+                        app(DialerService::class)->syncAttemptFromPayload($payload);
+                        break;
+
+                    case 'callcenter_member_queued':
+                    case 'callcenter_member_answered':
+                    case 'callcenter_member_abandoned':
+                    case 'callcenter_callback_requested':
+                        app(CallCenterService::class)->recordQueueEvent(array_merge($payload, [
+                            'data' => array_merge($data, [
+                                'event_type' => match ($event) {
+                                    'callcenter_member_queued' => 'member.queued',
+                                    'callcenter_member_answered' => 'member.answered',
+                                    'callcenter_member_abandoned' => 'member.abandoned',
+                                    'callcenter_callback_requested' => 'callback.requested',
+                                    default => $event,
+                                },
+                            ]),
+                        ]));
                         break;
                     // Add more event types as needed
 

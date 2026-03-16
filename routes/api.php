@@ -352,6 +352,14 @@ Route::group(['middleware' => ['auth:sanctum', 'api.cookie.auth']], function () 
     Route::get('domains/data', [DomainController::class, 'getData'])->name('domains.data');
     Route::post('domains/item-options', [DomainController::class, 'getItemOptions'])->name('domains.item.options');
     Route::post('domains/bulk-delete', [DomainController::class, 'bulkDelete'])->name('domains.bulk.delete');
+
+    if (file_exists(base_path('Modules/Dialer/routes/api.php'))) {
+        require base_path('Modules/Dialer/routes/api.php');
+    }
+
+    if (file_exists(base_path('Modules/CallCenter/routes/api.php'))) {
+        require base_path('Modules/CallCenter/routes/api.php');
+    }
 });
 
 Route::group(['middleware' => ['auth:sanctum']], function () {

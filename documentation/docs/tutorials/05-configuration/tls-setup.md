@@ -12,7 +12,7 @@ This guide provides a step-by-step tutorial for configuring TLS for FS PBX with 
 1\. Prerequisites
 =================
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#1-prerequisites)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#1-prerequisites)
 
 -   SSL Certificate Files: Obtain your certificate files from the CA. Typically you will have:
 
@@ -24,14 +24,14 @@ This guide provides a step-by-step tutorial for configuring TLS for FS PBX with 
 2\. SSL Certificate Installation
 ================================
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#2-ssl-certificate-installation)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#2-ssl-certificate-installation)
 
 In this step, you will install your purchased SSL certificate
 
 2.1 Upload and Prepare the Certificate
 --------------------------------------
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#21-upload-and-prepare-the-certificate)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#21-upload-and-prepare-the-certificate)
 
 Transfer your certificate files (.crt and any CA bundle) and your private key (.key) to the server (use SCP, SFTP, or paste via SSH). Place them in a secure directory (e.g. your home folder) temporarily. Then set the proper permissions on these files for security:
 
@@ -49,7 +49,7 @@ This ensures the key is not publicly readable​. Adjust file names as needed fo
 2.2 Install Certificate for FreeSWITCH (SIP TLS and WebRTC)
 -----------------------------------------------------------
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#22-install-certificate-for-freeswitch-sip-tls-and-webrtc)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#22-install-certificate-for-freeswitch-sip-tls-and-webrtc)
 
 Next, configure FreeSWITCH to use the certificate for SIP over TLS and WebRTC. FreeSWITCH expects its certificate files in a specific directory (usually `/etc/freeswitch/tls` for FS PBX installations). We will create a combined certificate file as required by FreeSWITCH:
 
@@ -112,7 +112,7 @@ At this point, the certificate is installed in the expected locations. Next, we 
 3\. FreeSWITCH Configuration (Enable TLS and SRTP)
 ==================================================
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#3-freeswitch-configuration-enable-tls-and-srtp)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#3-freeswitch-configuration-enable-tls-and-srtp)
 
 Now we will enable TLS support in FreeSWITCH's SIP profiles and adjust settings for secure SIP and media. This can be done via FS PBX's GUI (Advanced -> Variables)
 
@@ -139,6 +139,6 @@ After updating FS PBX settings, go to **Status->SIP Status** and flush the cach
 4\. TLS Security
 ================
 
-[](https://github.com/eduardozfr/fspbx-main/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#4-tls-security)
+[](https://github.com/eduardozfr/fspbx/wiki/Enabling-TLS-Support-for-FS-PBX-(Using-a-Purchased-SSL-Certificate)#4-tls-security)
 
 The TLS connection uses standard SSL protocols. Most modern phones and softphones will trust common commercial CAs. To avoid Man-in-the-Middle attacks, clients should verify the server certificate. This means the client must trust the CA that signed your cert. If you purchased from a well-known CA, most devices (and browsers for WebRTC) will implicitly trust it. Avoid using self-signed or private CA certs for client-facing TLS to prevent trust issues. It's also wise to disable old TLS versions if any of your clients allow (e.g., force TLS 1.2+ as mentioned). You can also configure FreeSWITCH to present the full certificate chain (which we did by using fullchain.pem in all.pem) so that clients can validate up to the root. There is an option to require mutual TLS (client certificates), but that's rarely used in SIP and is beyond the scope of this guide.
