@@ -119,6 +119,7 @@ async function getConfig() {
                 '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
                 '@modules': path.resolve(__dirname + '/modules'),
                 '@layouts': path.resolve(__dirname, 'resources/js/Layouts'),
+                '@composables': path.resolve(__dirname, 'resources/js/composables'),
                 '@icons': path.resolve(__dirname, 'resources/js/Pages/components/icons'),
                 '@generalComponents': path.resolve(__dirname, 'resources/js/Pages/components/general'),
             }
@@ -127,4 +128,3 @@ async function getConfig() {
 }
 
 export default getConfig();
-

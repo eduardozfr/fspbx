@@ -15,6 +15,7 @@
 - Hardened the installer for the public GitHub repository by cloning `eduardozfr/fspbx` on the `main` branch, reusing existing checkouts safely, creating Laravel cache/storage directories before Composer, and retrying Composer installs with root-safe settings.
 - Fixed installation bootstrap issues around `bootstrap/cache`, `storage/framework/views`, `storage/app/public`, and asset publication to prevent `package:discover` and `storage:link` failures on clean servers.
 - Hardened frontend builds during install and update by recreating `modules_statuses.json` automatically when missing, preserving enabled module state, and raising the Node heap limit for `vite build` to avoid out-of-memory failures on small servers.
+- Fixed module frontend imports for `Call Center` and `Dialer` by switching shared locale access to a Vite alias instead of brittle deep relative paths, preventing clean-install build failures.
 - Replaced project documentation URLs with repository-aligned references and GitHub Pages-compatible documentation URLs.
 - Added English and PT-BR documentation companions for the main README and onboarding guides.
 

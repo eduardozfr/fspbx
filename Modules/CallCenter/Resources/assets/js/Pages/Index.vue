@@ -226,7 +226,7 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import MainLayout from '@layouts/MainLayout.vue'
-import { useLocale } from '../../../../../resources/js/composables/useLocale'
+import { useLocale } from '@composables/useLocale'
 
 const props = defineProps({ summary: Object, queues: Array, agents: Array, wallboard: Object, callbacks: Array, pauseReasons: Array, options: Object, initialTab: String, routes: Object })
 const page = usePage()

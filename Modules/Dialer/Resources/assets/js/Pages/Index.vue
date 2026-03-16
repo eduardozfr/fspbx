@@ -250,7 +250,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import MainLayout from '@layouts/MainLayout.vue'
-import { useLocale } from '../../../../../resources/js/composables/useLocale'
+import { useLocale } from '@composables/useLocale'
 
 const props = defineProps({ campaigns: Array, leads: Array, attempts: Array, dispositions: Array, dncEntries: Array, stateRules: Array, importBatches: Array, options: Object, routes: Object })
 const page = usePage()
