@@ -1,19 +1,30 @@
 <template>
     <MainLayout>
-        <main class="mx-auto max-w-8xl space-y-6 px-4 py-10 sm:px-6 lg:px-8">
-            <section class="rounded-3xl bg-slate-900 p-6 text-white shadow-xl">
-                <p class="text-sm uppercase tracking-[0.3em] text-slate-300">{{ t('Call Center') }}</p>
-                <h1 class="mt-2 text-3xl font-semibold">{{ t('Live queue operations, callbacks, supervision, and monitoring') }}</h1>
-                <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-6">
-                    <div class="rounded-2xl bg-white/10 px-4 py-3"><div class="text-xs uppercase tracking-wide text-slate-300">{{ t('Queues') }}</div><div class="mt-2 text-2xl font-semibold">{{ summary.queues }}</div></div>
-                    <div class="rounded-2xl bg-white/10 px-4 py-3"><div class="text-xs uppercase tracking-wide text-slate-300">{{ t('Agents') }}</div><div class="mt-2 text-2xl font-semibold">{{ summary.agents }}</div></div>
-                    <div class="rounded-2xl bg-emerald-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-emerald-100">{{ t('Online') }}</div><div class="mt-2 text-2xl font-semibold text-emerald-200">{{ summary.online_agents }}</div></div>
-                    <div class="rounded-2xl bg-amber-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-amber-100">{{ t('Busy') }}</div><div class="mt-2 text-2xl font-semibold text-amber-200">{{ summary.busy_agents }}</div></div>
-                    <div class="rounded-2xl bg-cyan-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-cyan-100">{{ t('Paused') }}</div><div class="mt-2 text-2xl font-semibold text-cyan-200">{{ summary.paused_agents }}</div></div>
-                    <div class="rounded-2xl bg-rose-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-rose-100">{{ t('Callbacks') }}</div><div class="mt-2 text-2xl font-semibold text-rose-200">{{ summary.pending_callbacks }}</div></div>
+        <main class="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef4f7_100%)] px-4 py-10 sm:px-6 lg:px-8">
+            <section class="mx-auto max-w-8xl rounded-[2rem] bg-slate-950 p-6 text-white shadow-2xl">
+                <div class="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.3em] text-slate-300">{{ t('Call Center') }}</p>
+                        <h1 class="mt-2 text-3xl font-semibold">{{ t('Live queue operations, callbacks, supervision, and monitoring') }}</h1>
+                        <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{{ t('Manage live queue service levels, supervise agents, and keep callback ownership visible without leaving the operation screen.') }}</p>
+                        <div class="mt-5 flex flex-wrap gap-3">
+                            <button type="button" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900" @click="activeTab = 'overview'">{{ t('Overview') }}</button>
+                            <button type="button" class="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-white" @click="activeTab = 'wallboard'">{{ t('Wallboard') }}</button>
+                            <button type="button" class="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/15" @click="activeTab = 'settings'">{{ t('Settings') }}</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-2">
+                        <div class="rounded-2xl bg-white/10 px-4 py-3"><div class="text-xs uppercase tracking-wide text-slate-300">{{ t('Queues') }}</div><div class="mt-2 text-2xl font-semibold">{{ summary.queues }}</div></div>
+                        <div class="rounded-2xl bg-white/10 px-4 py-3"><div class="text-xs uppercase tracking-wide text-slate-300">{{ t('Agents') }}</div><div class="mt-2 text-2xl font-semibold">{{ summary.agents }}</div></div>
+                        <div class="rounded-2xl bg-emerald-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-emerald-100">{{ t('Online') }}</div><div class="mt-2 text-2xl font-semibold text-emerald-200">{{ summary.online_agents }}</div></div>
+                        <div class="rounded-2xl bg-amber-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-amber-100">{{ t('Busy') }}</div><div class="mt-2 text-2xl font-semibold text-amber-200">{{ summary.busy_agents }}</div></div>
+                        <div class="rounded-2xl bg-cyan-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-cyan-100">{{ t('Paused') }}</div><div class="mt-2 text-2xl font-semibold text-cyan-200">{{ summary.paused_agents }}</div></div>
+                        <div class="rounded-2xl bg-rose-400/15 px-4 py-3"><div class="text-xs uppercase tracking-wide text-rose-100">{{ t('Callbacks') }}</div><div class="mt-2 text-2xl font-semibold text-rose-200">{{ summary.pending_callbacks }}</div></div>
+                    </div>
                 </div>
             </section>
 
+            <div class="mx-auto mt-6 max-w-8xl space-y-6">
             <div v-if="message.text" class="rounded-2xl border px-4 py-3 text-sm" :class="message.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'">{{ message.text }}</div>
 
             <div class="flex flex-wrap gap-2">
@@ -217,6 +228,7 @@
                         </div>
                     </form>
                 </section>
+            </div>
             </div>
         </main>
     </MainLayout>

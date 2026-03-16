@@ -2,6 +2,7 @@
 
 namespace Modules\Dialer\Services;
 
+use App\Support\BrazilianDialerStateRules;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
@@ -19,13 +20,7 @@ class DialerComplianceService
 
     public function defaultSchedule(): array
     {
-        return collect(self::DAYS)->mapWithKeys(fn(string $day) => [
-            $day => [
-                'enabled' => true,
-                'start' => '08:00',
-                'end' => '20:00',
-            ],
-        ])->all();
+        return BrazilianDialerStateRules::defaultSchedule();
     }
 
     public function normalizeSchedule(array|string|null $schedule): array

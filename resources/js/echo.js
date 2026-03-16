@@ -9,21 +9,27 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
-const isHttps = window.location.protocol === 'https:'
-const host = window.location.hostname
-const port = window.location.port
-    ? Number(window.location.port)
-    : (isHttps ? 443 : 80)
+const reverbKey = import.meta.env.VITE_REVERB_APP_KEY
 
-window.Echo = new Echo({
-    broadcaster: 'reverb',
-    key: import.meta.env.VITE_REVERB_APP_KEY,
+if (!reverbKey) {
+    window.Echo = null
+} else {
+    const fallbackScheme = window.location.protocol === 'https:' ? 'https' : 'http'
+    const scheme = String(import.meta.env.VITE_REVERB_SCHEME || fallbackScheme).replace(':', '')
+    const secure = scheme === 'https'
+    const host = import.meta.env.VITE_REVERB_HOST || window.location.hostname
+    const port = Number(import.meta.env.VITE_REVERB_PORT || (secure ? 443 : 80))
+    const path = import.meta.env.VITE_REVERB_PATH || '/ws'
+    const wsPath = path.startsWith('/') ? path : `/${path}`
 
-    wsHost: host,
-    wsPort: port,
-    wssPort: port,
-    forceTLS: isHttps,
-
-    enabledTransports: ['ws', 'wss'],
-    wsPath: '/ws',
-})
+    window.Echo = new Echo({
+        broadcaster: 'reverb',
+        key: reverbKey,
+        wsHost: host,
+        wsPort: port,
+        wssPort: port,
+        wsPath,
+        forceTLS: secure,
+        enabledTransports: [secure ? 'wss' : 'ws'],
+    })
+}

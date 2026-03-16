@@ -73,6 +73,10 @@ class Update150
         }
 
         $env = File::get($envPath);
+        $appUrl = $this->getEnvValue($env, 'APP_URL') ?: 'http://127.0.0.1';
+        $publicHost = parse_url($appUrl, PHP_URL_HOST) ?: '127.0.0.1';
+        $publicScheme = parse_url($appUrl, PHP_URL_SCHEME) ?: 'http';
+        $publicPort = (string) (parse_url($appUrl, PHP_URL_PORT) ?: ($publicScheme === 'https' ? 443 : 80));
 
         // Generate credentials once if missing
         $appId     = $this->getEnvValue($env, 'REVERB_APP_ID') ?: (string) random_int(100000, 999999);
@@ -97,8 +101,11 @@ class Update150
             'REVERB_PORT'          => (string) $this->reverbPort,
             'REVERB_SCHEME'        => 'http',
 
-            // Frontend: only key is required if you compute host/scheme at runtime
             'VITE_REVERB_APP_KEY'  => $appKey,
+            'VITE_REVERB_HOST'     => $publicHost,
+            'VITE_REVERB_PORT'     => $publicPort,
+            'VITE_REVERB_SCHEME'   => $publicScheme,
+            'VITE_REVERB_PATH'     => '/ws',
         ];
 
         $env = $this->applyEnvUpdates($env, $updates);

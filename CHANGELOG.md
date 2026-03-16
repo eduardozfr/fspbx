@@ -6,9 +6,11 @@
 - Added bundled `Call Center` and `Dialer` modules with routes, controllers, services, Vue pages, permissions, menu integration, dashboard shortcuts, scheduler support, and dialer migrations.
 - Added dialer modes for `manual`, `preview`, `progressive`, and `power/predictive`.
 - Expanded the dialer with retry policy controls, dispositions, do-not-call management, AMD-ready fields, queued lead imports, webhook delivery jobs, and API endpoints for campaigns and leads.
-- Added per-state dialing compliance rules with editable schedules and conservative default windows for all US states plus stricter overrides where configured.
+- Replaced generic US state dialing defaults with Brazilian `UF` dialing rules, timezone mapping, Anatel-aligned national baseline windows, and a synchronization migration for existing installs.
 - Expanded the call center with wallboard metrics, callback tracking, pause reasons, agent pause/resume flows, monitoring session orchestration, queue event storage, and API endpoints for queues, agents, and wallboard data.
-- Exposed the new call center and dialer operational controls in the Vue UI, including state rule editing, queue-to-agent assignment, user provisioning, richer callback ownership, and advanced campaign compliance settings.
+- Redesigned the `Dialer` workspace into clearer operational areas for live dialing, campaign building, contact intake, UF compliance, and disposition management, with a more polished visual style.
+- Refined the `Call Center` landing experience with a stronger operational hero, clearer quick navigation, and more natural PT-BR terminology for wallboard and callback workflows.
+- Normalized several PT-BR terms that were confusing in production, including `Wakeup Calls` -> `Despertador`, `Callbacks` -> `Retornos`, and `Call Center` -> `Central de Atendimento`.
 - Added FreeSWITCH webhook synchronization for dialer attempt updates and call center queue events.
 - Added unit coverage for state-based dialer compliance scheduling.
 - Updated repository and installation references to `eduardozfr/fspbx`.

@@ -4,32 +4,32 @@
 
         <div class="m-3">
             <DataTable @search-action="handleSearchButtonClick" @reset-filters="handleFiltersReset">
-                <template #title>Wakeup Calls</template>
+                <template #title>{{ t('Wakeup Calls') }}</template>
 
                 <template #action>
 
                     <button v-if="page.props.auth.can.wakeup_calls_create" type="button"
                         @click.prevent="handleCreateButtonClick()"
                         class="rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                        Create
+                        {{ t('Create') }}
                     </button>
 
                     <button v-if="page.props.auth.can.wakeup_calls_view_settings" type="button"
                         @click.prevent="handleSettingsButtonClick()"
                         class="rounded-md bg-white px-2.5 py-1.5 ml-2 sm:ml-4 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        Settings
+                        {{ t('Settings') }}
                     </button>
 
                     <button v-if="!filterData.showGlobal && page.props.auth.can.wakeup_calls_view_global" type="button"
                         @click.prevent="handleShowGlobal()"
                         class="rounded-md bg-white px-2.5 py-1.5 ml-2 sm:ml-4 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        Show global
+                        {{ t('Show global') }}
                     </button>
 
                     <button v-if="filterData.showGlobal && page.props.auth.can.wakeup_calls_view_global" type="button"
                         @click.prevent="handleShowLocal()"
                         class="rounded-md bg-white px-2.5 py-1.5 ml-2 sm:ml-4 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                        Show local
+                        {{ t('Show local') }}
                     </button>
 
                 </template>
@@ -42,11 +42,11 @@
                         <input type="search" v-model="filterData.search" name="mobile-search-candidate"
                             id="mobile-search-candidate"
                             class="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:hidden"
-                            placeholder="Search" @keydown.enter="handleSearchButtonClick" />
+                            :placeholder="t('Search')" @keydown.enter="handleSearchButtonClick" />
                         <input type="search" v-model="filterData.search" name="desktop-search-candidate"
                             id="desktop-search-candidate"
                             class="hidden w-full rounded-md border-0 py-1.5 pl-10 text-sm leading-6 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:block"
-                            placeholder="Search" @keydown.enter="handleSearchButtonClick" />
+                            :placeholder="t('Search')" @keydown.enter="handleSearchButtonClick" />
                     </div>
 
 
@@ -70,23 +70,23 @@
                             class="h-4 w-4 rounded border-gray-300 text-indigo-600">
                         <BulkActionButton :actions="bulkActions" @bulk-action="handleBulkActionRequest"
                             :has-selected-items="selectedItems.length > 0" />
-                        <span class="pl-4">Wake-Up Time</span>
+                        <span class="pl-4">{{ t('Wake-Up Time') }}</span>
                     </TableColumnHeader>
 
-                    <TableColumnHeader header="Extension" class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    <TableColumnHeader :header="t('Extension')" class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
                     </TableColumnHeader>
-                    <TableColumnHeader v-if="filterData.showGlobal" header="Domain"
+                    <TableColumnHeader v-if="filterData.showGlobal" :header="t('Domains')"
                         class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900" />
-                    <TableColumnHeader header="Daily Repeat"
+                    <TableColumnHeader :header="t('Daily Repeat')"
                         class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
                     </TableColumnHeader>
-                    <TableColumnHeader header="Call Status"
+                    <TableColumnHeader :header="t('Call Status')"
                         class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
                     </TableColumnHeader>
-                    <TableColumnHeader header="Next Attempt"
+                    <TableColumnHeader :header="t('Next Attempt')"
                         class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
                     </TableColumnHeader>
-                    <TableColumnHeader header="Retry Count"
+                    <TableColumnHeader :header="t('Retry Count')"
                         class="px-2 py-3.5 text-left text-sm font-semibold text-gray-900">
                     </TableColumnHeader>
 
@@ -141,8 +141,8 @@
                         </TableField>
 
                         <TableField class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
-                            <span v-if="row.recurring">Yes</span>
-                            <span v-else>No</span>
+                            <span v-if="row.recurring">{{ t('Yes') }}</span>
+                            <span v-else>{{ t('No') }}</span>
                         </TableField>
 
                         <TableField class="whitespace-nowrap px-2 py-2 text-sm text-gray-500">
@@ -158,7 +158,7 @@
                         <TableField class="whitespace-nowrap px-2 py-1 text-sm text-gray-500">
                             <template #action-buttons>
                                 <div class="flex items-center whitespace-nowrap">
-                                    <ejs-tooltip :content="'Edit wakeup call'" position='TopLeft'
+                                    <ejs-tooltip :content="t('Edit wakeup call')" position='TopLeft'
                                         target="#edit_tooltip_target">
                                         <div id="edit_tooltip_target">
                                             <PencilSquareIcon @click="handleEditRequest(row.uuid)"
@@ -166,7 +166,7 @@
                                         </div>
                                     </ejs-tooltip>
 
-                                    <ejs-tooltip v-if="page.props.auth.can.wakeup_calls_delete" :content="'Delete'"
+                                    <ejs-tooltip v-if="page.props.auth.can.wakeup_calls_delete" :content="t('Delete')"
                                         position='TopCenter' target="#delete_tooltip_target">
                                         <div id="delete_tooltip_target">
                                             <TrashIcon @click="handleSingleItemDeleteRequest(row.destroy_route)"
@@ -183,9 +183,9 @@
                     <!-- Conditional rendering for 'no records' message -->
                     <div v-if="data.data.length === 0" class="text-center my-5 ">
                         <MagnifyingGlassIcon class="mx-auto h-12 w-12 text-gray-400" />
-                        <h3 class="mt-2 text-sm font-semibold text-gray-900">No results found</h3>
+                        <h3 class="mt-2 text-sm font-semibold text-gray-900">{{ t('No results found') }}</h3>
                         <p class="mt-1 text-sm text-gray-500">
-                            Adjust your search and try again.
+                            {{ t('Adjust your search and try again.') }}
                         </p>
                     </div>
                 </template>
@@ -205,7 +205,7 @@
         </div>
     </MainLayout>
 
-    <AddEditItemModal :show="showCreateModal" :header="'Create a New Wakeup Call'" :loading="loadingModal"
+    <AddEditItemModal :show="showCreateModal" :header="t('Create a New Wakeup Call')" :loading="loadingModal"
         :customClass="'sm:max-w-4xl'" @close="handleModalClose">
         <template #modal-body>
             <CreateWakeupCallForm :options="itemOptions" :errors="formErrors" :is-submitting="createFormSubmitting"
@@ -213,7 +213,7 @@
         </template>
     </AddEditItemModal>
 
-    <AddEditItemModal :show="showEditModal" :header="'Update Wakeup Call Settings'" :loading="loadingModal"
+    <AddEditItemModal :show="showEditModal" :header="t('Update Wakeup Call Settings')" :loading="loadingModal"
         :customClass="'sm:max-w-4xl'" @close="handleModalClose">
         <template #modal-body>
             <UpdateWakeupCallForm :options="itemOptions" :errors="formErrors" :is-submitting="updateFormSubmitting"
@@ -221,7 +221,7 @@
         </template>
     </AddEditItemModal>
 
-    <AddEditItemModal :show="showSettingsModal" :header="'Update Wakeup Call Settings'" :loading="loadingModal"
+    <AddEditItemModal :show="showSettingsModal" :header="t('Update Wakeup Call Settings')" :loading="loadingModal"
         :customClass="'sm:max-w-4xl'" @close="handleModalClose">
         <template #modal-body>
             <UpdateWakeupCallSettingsForm :options="settings" :errors="formErrors" :is-submitting="updateFormSubmitting"
@@ -233,9 +233,9 @@
         @update:show="hideNotification" />
 
     <ConfirmationModal :show="showDeleteConfirmationModal" @close="showDeleteConfirmationModal = false"
-        @confirm="confirmDeleteAction"     :header="'Confirm Deletion'"
-    :text="'This action will permanently delete the selected wakup call(s). Are you sure you want to proceed?'"
-        :confirm-button-label="'Delete'" cancel-button-label="Cancel" />
+        @confirm="confirmDeleteAction"     :header="t('Confirm Deletion')"
+    :text="t('This action will permanently delete the selected wakup call(s). Are you sure you want to proceed?')"
+        :confirm-button-label="t('Delete')" :cancel-button-label="t('Cancel')" />
 </template>
 
 <script setup>
@@ -262,8 +262,10 @@ import UpdateWakeupCallForm from "./components/forms/UpdateWakeupCallForm.vue";
 import UpdateWakeupCallSettingsForm from "./components/forms/UpdateWakeupCallSettingsForm.vue";
 import CreateWakeupCallForm from "./components/forms/CreateWakeupCallForm.vue";
 import Loading from "./components/general/Loading.vue";
+import { useLocale } from "../composables/useLocale";
 
 const page = usePage()
+const { t } = useLocale()
 const loading = ref(false)
 const loadingModal = ref(false)
 const notificationType = ref(null);
