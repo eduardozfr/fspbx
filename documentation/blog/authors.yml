@@ -1,0 +1,18 @@
+lemstrom:
+  name: Andrew Lemstrom
+  title: Volunteer Document Maker
+  url: https://linkedin.com/in/andrew-lemstrom
+  image_url: https://blueintegrations.com/images/me.jpg
+  page: true
+  socials:
+    linkedin: andrew-lemstrom
+    github: alemstrom
+
+dexter:
+  name: Dexter A.
+  title: FS PBX Developer
+  url: https://www.linkedin.com/in/dexterallen/
+  image_url: https://media.licdn.com/dms/image/v2/D5603AQEcoDY-g-Y4Mw/profile-displayphoto-scale_400_400/B56ZnR1tyDJoAg-/0/1760162143778?e=1762992000&v=beta&t=DGTl6UFBE1-sKLzPawmUEVleqHO2_TYPwZklbFkc_Ok
+  page: true
+  socials:
+    linkedin: dexterallen
