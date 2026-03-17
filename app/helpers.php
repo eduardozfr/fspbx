@@ -184,6 +184,39 @@ if (!function_exists('event_socket_request_cmd')) {
         return $response;
     }
 }
+
+if (!function_exists('fspbx_sound_path_candidates')) {
+    function fspbx_sound_path_candidates(string $language, string $dialect, string $voice): array
+    {
+        $candidates = [];
+
+        foreach (array_unique(array_filter([
+            $dialect,
+            strtolower($dialect),
+            strtoupper($dialect),
+        ])) as $candidateDialect) {
+            $candidates[] = $language . "/" . $candidateDialect . "/" . $voice;
+        }
+
+        return $candidates;
+    }
+}
+
+if (!function_exists('fspbx_resolve_sound_path_prefix')) {
+    function fspbx_resolve_sound_path_prefix(string $language, string $dialect, string $voice): string
+    {
+        $disk = Storage::disk('sounds');
+
+        foreach (fspbx_sound_path_candidates($language, $dialect, $voice) as $candidate) {
+            if (!empty($disk->allFiles($candidate))) {
+                return $candidate;
+            }
+        }
+
+        return $language . "/" . $dialect . "/" . $voice;
+    }
+}
+
 if (!function_exists('outbound_route_to_bridge')) {
     function outbound_route_to_bridge($domain_uuid, $destination_number, array $channel_variables = null)
     {
@@ -1238,11 +1271,12 @@ if (!function_exists('getSoundsCollection')) {
             ->pluck('var_value', 'var_name');
         // Extract values
         $defaultLanguage = $variables['default_language'] ?? 'pt'; // Fallback to PT-BR if not found
-        $defaultDialect = $variables['default_dialect'] ?? 'br';  // Fallback to PT-BR if not found
+        $defaultDialect = $variables['default_dialect'] ?? 'BR';  // Fallback to PT-BR if not found
         $defaultVoice = $variables['default_voice'] ?? 'karina';  // Fallback to PT-BR if not found
 
-        $sounds = Storage::disk('sounds')->allFiles($defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice);
-        $soundPrefixPattern = preg_quote($defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice . "/", '#');
+        $soundPrefix = fspbx_resolve_sound_path_prefix($defaultLanguage, $defaultDialect, $defaultVoice);
+        $sounds = Storage::disk('sounds')->allFiles($soundPrefix);
+        $soundPrefixPattern = preg_quote($soundPrefix . "/", '#');
 
         $sounds = collect($sounds)
             ->map(function ($file) use ($soundPrefixPattern) {

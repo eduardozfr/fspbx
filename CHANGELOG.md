@@ -19,7 +19,8 @@
 - Kept the module naming aligned with operation language by preserving `Call Center` in PT-BR instead of translating it to `Central de Atendimento`, while still normalizing other production-facing labels such as `Wakeup Calls` -> `Despertador` and `Callbacks` -> `Retornos`.
 - Reworked the `Dialer` again into clearer launch, workspace, compliance, and campaign-design lanes inspired by professional outbound suites, including stronger launch checklists, better routing sections, and more explicit pacing/compliance guidance.
 - Reworked the `Call Center` again around floor-control concepts used by wallboard-oriented platforms, adding clearer floor-navigation cards, live conversation surfacing, and stronger supervision metrics.
-- Changed the installer to fetch and install the PT-BR `karina` FreeSWITCH prompt set by default, while rewriting FreeSWITCH sound defaults to `pt/br/karina` during provisioning and initial seeding.
+- Changed the installer to fetch and install the PT-BR `karina` FreeSWITCH prompt set by default, while rewriting FreeSWITCH sound defaults during provisioning and initial seeding.
+- Hardened the PT-BR FreeSWITCH sounds installer to try both `pt-BR` and `pt-br` archive variants, require only the base `8000` prompt set for success, treat higher sample rates as optional, and align runtime prompt lookups with the detected on-disk dialect casing.
 - Changed Brazilian installation defaults to `pt-br` and `America/Sao_Paulo` for the initial superadmin, new-user defaults, scheduled-job timezone defaults, and FreeSWITCH sound fallbacks used by greetings and prompt selection.
 - Added FreeSWITCH webhook synchronization for dialer attempt updates and call center queue events.
 - Added unit coverage for state-based dialer compliance scheduling.

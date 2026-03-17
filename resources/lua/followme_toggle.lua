@@ -27,7 +27,7 @@ local function main()
 
     local sounds_dir        = session:getVariable("sounds_dir")
     local default_language  = session:getVariable("default_language") or "pt"
-    local default_dialect   = session:getVariable("default_dialect") or "br"
+    local default_dialect   = session:getVariable("default_dialect") or "BR"
     local default_voice     = session:getVariable("default_voice") or "karina"
 
     if not (domain_uuid and domain_name and extension_uuid) then

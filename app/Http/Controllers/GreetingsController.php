@@ -131,22 +131,28 @@ class GreetingsController extends Controller
                 ->pluck('var_value', 'var_name');
 
             $defaultLanguage = $variables['default_language'] ?? 'pt'; // Fallback to PT-BR if not found
-            $defaultDialect = $variables['default_dialect'] ?? 'br';  // Fallback to PT-BR if not found
+            $defaultDialect = $variables['default_dialect'] ?? 'BR';  // Fallback to PT-BR if not found
             $defaultVoice = $variables['default_voice'] ?? 'karina';  // Fallback to PT-BR if not found
 
-            // Alternative path in the 'sounds' disk
-            $alternativePath = $defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice  . "/" . str_replace('/', "/16000/", $file_name);
+            $soundRelativePath = str_replace('/', "/16000/", $file_name);
+            $filePath = null;
 
-            if (!Storage::disk('sounds')->exists($alternativePath)) {
+            foreach (fspbx_sound_path_candidates($defaultLanguage, $defaultDialect, $defaultVoice) as $soundPrefix) {
+                $alternativePath = $soundPrefix . "/" . $soundRelativePath;
+
+                if (Storage::disk('sounds')->exists($alternativePath)) {
+                    $filePath = Storage::disk('sounds')->path($alternativePath);
+                    break;
+                }
+            }
+
+            if ($filePath === null) {
                 // File not found in either location
                 return response()->json([
                     'success' => false,
                     'errors' => ['server' => 'File not found']
                 ], 404);
             }
-
-            // File found in the alternative path
-            $filePath = Storage::disk('sounds')->path($alternativePath);
         } else {
             // File found in the primary path
             $filePath = Storage::disk('recordings')->path($primaryPath);

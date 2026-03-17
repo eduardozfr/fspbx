@@ -612,7 +612,7 @@ class FSPBXInitialDBSeed extends Command
     {
         $defaults = [
             'default_language' => 'pt',
-            'default_dialect' => 'br',
+            'default_dialect' => 'BR',
             'default_voice' => 'karina',
         ];
 
@@ -632,7 +632,7 @@ class FSPBXInitialDBSeed extends Command
             SwitchVariable::updateOrCreate(['var_name' => $name], $payload);
         }
 
-        $this->info("FreeSWITCH sound defaults configured to pt/br/karina.");
+        $this->info("FreeSWITCH sound defaults configured to pt/BR/karina.");
     }
 
     /**
