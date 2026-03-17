@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
+
+class VerifyCsrfToken extends Middleware
+{
+    /**
+     * The URIs that should be excluded from CSRF verification.
+     *
+     * @var array<int, string>
+     */
+    protected $except = [
+        'webhook/postmark',
+        'webhook/mailgun',
+        'webhook/commio/sms',
+        'webhook/sinch/sms',
+        'webhook/bandwidth/sms',
+        'webhook/telnyx/sms',
+        'webhook/clicksend/sms',
+        'sms/ringotelwebhook',
+        'webhook/freeswitch',
+        'webhook/stripe',
+        'webhook/assemblyai',
+    ];
+}
