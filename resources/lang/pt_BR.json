@@ -172,7 +172,6 @@
   "Power/Predictive": "Power/Preditivo",
   "Preview": "Preview",
   "Preview next lead": "Visualizar proximo lead",
-  "Pro Features": "Recursos Pro",
   "Progressive": "Progressivo",
   "Provision Templates": "Templates de provisionamento",
   "Queue": "Fila",
@@ -908,4 +907,42 @@
   ,"Operations": "Operacoes"
   ,"Supervision": "Supervisao"
   ,"Configuration": "Configuracao"
+  ,"Web Phone": "Softphone Web"
+  ,"Professional browser calling console": "Console profissional de chamadas no navegador"
+  ,"Run secure PBX calls from the browser with live registration status, dialpad actions, and audio controls in one workspace.": "Execute chamadas seguras do PBX pelo navegador com status de registro em tempo real, dialpad e controle de audio em um unico workspace."
+  ,"Assigned extension": "Ramal atribuido"
+  ,"Transport": "Transporte"
+  ,"Call state": "Estado da chamada"
+  ,"Load configuration": "Carregar configuracao"
+  ,"Call controls": "Controles de chamada"
+  ,"Run the browser softphone": "Operar o softphone do navegador"
+  ,"Enter extension or full number": "Digite o ramal ou numero completo"
+  ,"Outbound prefix": "Prefixo de saida"
+  ,"Identity": "Identidade"
+  ,"Send DTMF": "Enviar DTMF"
+  ,"Backspace": "Apagar"
+  ,"Clear": "Limpar"
+  ,"Dialpad": "Teclado numerico"
+  ,"Timeline": "Linha do tempo"
+  ,"Recent events": "Eventos recentes"
+  ,"Runtime status": "Status em tempo real"
+  ,"Extension identity": "Identidade do ramal"
+  ,"Display name": "Nome de exibicao"
+  ,"SIP address": "Endereco SIP"
+  ,"Signaling": "Sinalizacao"
+  ,"Audio": "Audio"
+  ,"Device preferences": "Preferencias de dispositivo"
+  ,"Refresh devices": "Atualizar dispositivos"
+  ,"Microphone": "Microfone"
+  ,"System default microphone": "Microfone padrao do sistema"
+  ,"Speaker output": "Saida de audio"
+  ,"System default speaker": "Saida padrao do sistema"
+  ,"Governance": "Governanca"
+  ,"Softphone checklist": "Checklist do softphone"
+  ,"Attention": "Atencao"
+  ,"No extension is assigned to your user. Ask an administrator to link a PBX extension before using the Web Phone.": "Nenhum ramal esta vinculado a este usuario. Peca para um administrador associar um ramal do PBX antes de usar o Softphone Web."
+  ,"Browser secure context": "Contexto seguro do navegador"
+  ,"Microphone devices": "Dispositivos de microfone"
+  ,"Speaker routing": "Roteamento de audio"
+  ,"events": "eventos"
 }

@@ -79,6 +79,10 @@
                                                     'account_groups',
                                                     'accounts',
                                                     'extension_uuid',
+                                                    'security_title',
+                                                    'security_helper',
+                                                    'password',
+                                                    'password_confirmation',
                                                     'container_3',
                                                     'reset',
                                                     'submit',
@@ -191,6 +195,57 @@
                                                 <HiddenElement name="domain_uuid" :meta="true" />
                                                 <HiddenElement name="user_enabled" :meta="true" />
 
+                                                <StaticElement name="security_title" tag="h4" content="Access password" />
+
+                                                <StaticElement name="security_helper">
+                                                    <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+                                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                                            <div>
+                                                                <div class="text-sm font-semibold text-slate-900">Create the login secret</div>
+                                                                <p class="mt-1 text-sm leading-6 text-slate-500">
+                                                                    You can define the password now, or leave the fields blank and let the system generate a strong temporary password for you after creation.
+                                                                </p>
+                                                            </div>
+                                                            <div class="flex flex-wrap gap-2">
+                                                                <button type="button" class="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50" @click="togglePasswordVisibility">
+                                                                    {{ showPassword ? 'Hide password' : 'Show password' }}
+                                                                </button>
+                                                                <button type="button" class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100" @click="handleGeneratePassword">
+                                                                    Generate strong password
+                                                                </button>
+                                                                <button type="button" class="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!getDraftPassword()" @click="handleCopyToClipboard(getDraftPassword())">
+                                                                    Copy password
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </StaticElement>
+
+                                                <TextElement
+                                                    name="password"
+                                                    label="Password"
+                                                    description="If left blank, the system will generate a temporary password automatically."
+                                                    :input-type="showPassword ? 'text' : 'password'"
+                                                    autocomplete="new-password"
+                                                    :columns="{
+                                                        sm: {
+                                                            container: 6,
+                                                        },
+                                                    }"
+                                                />
+
+                                                <TextElement
+                                                    name="password_confirmation"
+                                                    label="Confirm password"
+                                                    :input-type="showPassword ? 'text' : 'password'"
+                                                    autocomplete="new-password"
+                                                    :columns="{
+                                                        sm: {
+                                                            container: 6,
+                                                        },
+                                                    }"
+                                                />
+
                                                 <GroupElement name="container_3" />
 
                                                 <ButtonElement name="submit" button-label="Save" :submits="true"
@@ -228,6 +283,7 @@ const props = defineProps({
 });
 
 const form$ = ref(null)
+const showPassword = ref(false)
 
 const submitForm = async (FormData, form$) => {
     // Using form$.requestData will EXCLUDE conditional elements and it 
@@ -271,10 +327,18 @@ const handleSuccess = (response, form$) => {
     // console.log(response.status) // HTTP status code
     // console.log(response.data) // response data
 
+    const messages = {
+        ...response.data.messages,
+        success: [
+            ...(response.data.messages?.success ?? []),
+            ...(response.data.generated_password ? [`Temporary password: ${response.data.generated_password}`] : []),
+        ],
+    }
+
     emit('close');
     emit('refresh-data');
     emit('open-edit-form', response.data.user_uuid);
-    emit('success', 'success', response.data.messages);
+    emit('success', 'success', messages);
 }
 
 const handleError = (error, details, form$) => {
@@ -315,6 +379,37 @@ const handleError = (error, details, form$) => {
             form$.messageBag.append('Couldn\'t submit form')
             break
     }
+}
+
+const getDraftPassword = () => form$.value?.el$('password')?.value || ''
+
+const buildStrongPassword = (length = 22) => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*?'
+    const bytes = new Uint32Array(length)
+    window.crypto.getRandomValues(bytes)
+
+    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
+}
+
+const handleGeneratePassword = () => {
+    const password = buildStrongPassword()
+    form$.value?.update({
+        password,
+        password_confirmation: password,
+    })
+    showPassword.value = true
+}
+
+const togglePasswordVisibility = () => {
+    showPassword.value = !showPassword.value
+}
+
+const handleCopyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+        emit('success', 'success', { success: ['Copied to clipboard.'] });
+    }).catch(() => {
+        emit('error', { response: { data: { errors: { request: ['Failed to copy to clipboard.'] } } } });
+    });
 }
 
 

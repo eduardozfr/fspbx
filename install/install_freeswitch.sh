@@ -135,6 +135,57 @@ verify_mod_avmd_loaded() {
     return 1
 }
 
+ensure_xml_param_value() {
+    local xml_file="$1"
+    local param_name="$2"
+    local param_value="$3"
+
+    if [ ! -f "$xml_file" ]; then
+        return 0
+    fi
+
+    if grep -Eq "^[[:space:]]*<param name=\"$param_name\" value=\"[^\"]*\"[[:space:]]*/>" "$xml_file"; then
+        sed -i -E "s#^[[:space:]]*<param name=\"$param_name\" value=\"[^\"]*\"[[:space:]]*/>#    <param name=\"$param_name\" value=\"$param_value\"/>#" "$xml_file"
+        return 0
+    fi
+
+    if grep -Eq "<!--[[:space:]]*<param name=\"$param_name\" value=\"[^\"]*\"[[:space:]]*/>[[:space:]]*-->" "$xml_file"; then
+        sed -i -E "s#<!--[[:space:]]*<param name=\"$param_name\" value=\"[^\"]*\"[[:space:]]*/>[[:space:]]*-->#    <param name=\"$param_name\" value=\"$param_value\"/>#" "$xml_file"
+        return 0
+    fi
+
+    if grep -q '<settings>' "$xml_file"; then
+        sed -i "/<settings>/a\\    <param name=\"$param_name\" value=\"$param_value\"/>" "$xml_file"
+        return 0
+    fi
+
+    print_warn "Could not inject $param_name into $xml_file automatically."
+    return 0
+}
+
+prepare_webphone_runtime_support() {
+    local profile
+
+    for profile in \
+        "/etc/freeswitch/sip_profiles/internal.xml" \
+        "/etc/freeswitch/sip_profiles/internal-ipv6.xml" \
+        "/etc/freeswitch/sip_profiles/external.xml" \
+        "/etc/freeswitch/sip_profiles/external-ipv6.xml"; do
+        ensure_xml_param_value "$profile" "ws-binding" ":5066"
+        ensure_xml_param_value "$profile" "wss-binding" ":7443"
+    done
+
+    if [ -f "/etc/freeswitch/tls/all.pem" ]; then
+        ln -sf /etc/freeswitch/tls/all.pem /etc/freeswitch/tls/agent.pem
+        ln -sf /etc/freeswitch/tls/all.pem /etc/freeswitch/tls/tls.pem
+        ln -sf /etc/freeswitch/tls/all.pem /etc/freeswitch/tls/wss.pem
+        ln -sf /etc/freeswitch/tls/all.pem /etc/freeswitch/tls/dtls-srtp.pem
+        print_success "FreeSWITCH TLS links for WebRTC and secure WebSocket were synchronized."
+    else
+        print_warn "No /etc/freeswitch/tls/all.pem file was found. WSS for the Web Phone will need a valid TLS certificate before secure browser calling can register."
+    fi
+}
+
 # Detect OS codename
 OS_CODENAME=$(lsb_release -sc 2>/dev/null || echo "")
 echo "Detected OS_CODENAME=$OS_CODENAME"
@@ -306,9 +357,11 @@ print_success "Compiling FreeSWITCH..."
 make -j $(getconf _NPROCESSORS_ONLN)
 make install
 
+native_amd_available=1
+
 if [ ! -f "/usr/lib/freeswitch/mod/mod_avmd.so" ]; then
-    print_error "mod_avmd.so was not built. Native AMD cannot be enabled with the current FreeSWITCH build."
-    exit 1
+    print_warn "mod_avmd.so was not built. Native AMD will stay unavailable with the current FreeSWITCH build, but the rest of the platform installation will continue."
+    native_amd_available=0
 fi
 
 # If /etc/freeswitch.orig exists, remove it
@@ -319,7 +372,10 @@ fi
 
 # Sync config files without depending on a single custom path to exist.
 sync_freeswitch_configuration
-ensure_freeswitch_module_load "/etc/freeswitch/autoload_configs/modules.conf.xml" "mod_avmd"
+if [ "$native_amd_available" -eq 1 ]; then
+    ensure_freeswitch_module_load "/etc/freeswitch/autoload_configs/modules.conf.xml" "mod_avmd"
+fi
+prepare_webphone_runtime_support
 
 # Default permissions
 chown -R www-data:www-data /etc/freeswitch
@@ -365,7 +421,13 @@ fi
 
 print_success "Restarting FreeSWITCH to validate native AMD support..."
 systemctl restart freeswitch
-verify_mod_avmd_loaded
+if [ "$native_amd_available" -eq 1 ]; then
+    if ! verify_mod_avmd_loaded; then
+        print_warn "Continuing installation even though native AMD could not be loaded at runtime."
+    fi
+else
+    print_warn "Skipping native AMD runtime validation because mod_avmd.so is not present in this build."
+fi
 
 print_success "Synchronizing dialer runtime listener in Supervisor..."
 sync_supervisor_program "/var/www/fspbx/install/fs-esl-listener-dialer.conf"

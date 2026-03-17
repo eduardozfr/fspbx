@@ -5,6 +5,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
 {
@@ -28,6 +29,7 @@ class StoreUserRequest extends FormRequest
             'extension_uuid' => 'nullable|uuid',
             'language'     => 'nullable|string|max:10',
             'time_zone'    => 'nullable|string|max:50',
+            'password'     => ['nullable', 'string', 'confirmed', Password::min(10)],
             'user_enabled' => 'required|string',
             'domain_uuid' => 'present',
             // domain_uuid is filled via mutator but you can also accept it explicitly

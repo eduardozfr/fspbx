@@ -92,4 +92,13 @@ return [
         'prod_client_profile_id' => env('CERETAX_PROD_CLIENT_PROFILE_ID', "default"),
     ],
 
+    'webphone' => [
+        'host' => env('WEBPHONE_SIGNALING_HOST'),
+        'force_secure' => filter_var(env('WEBPHONE_FORCE_SECURE', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+        'wss_port' => (int) env('WEBPHONE_WSS_PORT', 7443),
+        'ws_port' => (int) env('WEBPHONE_WS_PORT', 5066),
+        'ice_servers' => env('WEBPHONE_ICE_SERVERS', 'stun:stun.l.google.com:19302'),
+        'outbound_prefix' => env('WEBPHONE_OUTBOUND_PREFIX', ''),
+    ],
+
 ];

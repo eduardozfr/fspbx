@@ -399,6 +399,9 @@ class DashboardController extends Controller
         if (userCheckPermission("message_settings_list_view")) {
             $apps[] = ['name' => 'Messages', 'href' => '/messages', 'icon' => 'UsersIcon', 'slug' => 'messages'];
         }
+        if (Route::has('web-phone.index') && auth()->user()?->extension_uuid) {
+            $apps[] = ['name' => 'Web Phone', 'href' => route('web-phone.index'), 'icon' => 'ContactPhoneIcon', 'slug' => 'web_phone'];
+        }
         if (userCheckPermission("whitelisted_numbers_list_view")) {
             $apps[] = ['name' => 'Whitelisted Numbers', 'href' => route('whitelisted-numbers.index'), 'icon' => 'HeartIcon', 'slug' => 'whitelisted_numbers'];
         }

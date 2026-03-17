@@ -1,10 +1,10 @@
-# FS PBX
+    # FS PBX
 
 [Leia em portugues (Brasil)](README.pt-BR.md)
 
 ## Overview
 
-FS PBX is a Laravel + Vue.js management portal for FreeSWITCH environments. This repository is maintained at `eduardozfr/fspbx` and keeps the original project structure while extending it with:
+FS PBX is a Laravel + Vue.js management portal for FreeSWITCH environments. This repository is maintained at `eduardozfr/fspbx-main` and keeps the original project structure while extending it with:
 
 - bilingual UI support (`EN` and `PT-BR`) with English fallback
 - bundled `Call Center` and `Dialer` modules
@@ -29,7 +29,7 @@ FS PBX is a Laravel + Vue.js management portal for FreeSWITCH environments. This
 1. Run the installer from this repository:
 
 ```bash
-wget -O- https://raw.githubusercontent.com/eduardozfr/fspbx/main/install/install-fspbx.sh | bash
+wget -O- https://raw.githubusercontent.com/eduardozfr/fspbx-main/main/install/install-fspbx.sh | bash
 ```
 
 2. After installation, access the PBX from your domain or server hostname.

@@ -100,9 +100,13 @@
 
                                                 ]" />
                                                 <FormTab name="page1" label="Security" :elements="[
-                                                    'password_reset',
                                                     'security_title',
-
+                                                    'security_helper',
+                                                    'password',
+                                                    'password_confirmation',
+                                                    'security_actions',
+                                                    'password_reset',
+                                                    'security_submit',
                                                 ]" />
 
                                                 <FormTab name="advanced" label="Advanced" :elements="[
@@ -263,9 +267,63 @@
 
                                                 <StaticElement name="security_title" tag="h4" content="Security" />
 
+                                                <StaticElement name="security_helper">
+                                                    <div class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+                                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                                            <div>
+                                                                <div class="text-sm font-semibold text-slate-900">Set a new access password</div>
+                                                                <p class="mt-1 text-sm leading-6 text-slate-500">
+                                                                    The current password cannot be displayed for security reasons. Define a new password below, or generate a strong one and copy it before saving.
+                                                                </p>
+                                                            </div>
+                                                            <div class="flex flex-wrap gap-2">
+                                                                <button type="button" class="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50" @click="togglePasswordVisibility">
+                                                                    {{ showPassword ? 'Hide password' : 'Show password' }}
+                                                                </button>
+                                                                <button type="button" class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-100" @click="handleGeneratePassword">
+                                                                    Generate strong password
+                                                                </button>
+                                                                <button type="button" class="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!getDraftPassword()" @click="handleCopyToClipboard(getDraftPassword())">
+                                                                    Copy password
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </StaticElement>
+
+                                                <TextElement
+                                                    name="password"
+                                                    label="New password"
+                                                    description="Leave blank if you do not want to rotate the login password in this update."
+                                                    :input-type="showPassword ? 'text' : 'password'"
+                                                    autocomplete="new-password"
+                                                    :columns="{
+                                                        sm: {
+                                                            container: 6,
+                                                        },
+                                                    }"
+                                                />
+
+                                                <TextElement
+                                                    name="password_confirmation"
+                                                    label="Confirm new password"
+                                                    :input-type="showPassword ? 'text' : 'password'"
+                                                    autocomplete="new-password"
+                                                    :columns="{
+                                                        sm: {
+                                                            container: 6,
+                                                        },
+                                                    }"
+                                                />
+
+                                                <StaticElement name="security_actions" tag="hr" />
+
                                                 <ButtonElement name="password_reset" :secondary="true" label="Password"
                                                     @click="requestResetPassword" button-label="Reset Password"
                                                     align="left" />
+
+                                                <ButtonElement name="security_submit" button-label="Save security changes"
+                                                    :submits="true" align="right" />
 
                                                 <StaticElement name="advanced_title" tag="h4" content="Advanced" />
 
@@ -352,10 +410,11 @@ const showApiTokenModal = ref(false)
 const confirmDeleteAction = ref(null);
 const locations = ref([])
 const isLocationsLoading = ref(false)
+const showPassword = ref(false)
 
 const handleCopyToClipboard = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-        emit('success', 'success', { message: ['Copied to clipboard.'] });
+        emit('success', 'success', { success: ['Copied to clipboard.'] });
     }).catch((error) => {
         // Handle the error case
         emit('error', { response: { data: { errors: { request: ['Failed to copy to clipboard.'] } } } });
@@ -387,6 +446,29 @@ function clearErrorsRecursive(el$) {
 const requestResetPassword = () => {
     showResetConfirmationModal.value = true;
 };
+
+const getDraftPassword = () => form$.value?.el$('password')?.value || ''
+
+const buildStrongPassword = (length = 22) => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*?'
+    const bytes = new Uint32Array(length)
+    window.crypto.getRandomValues(bytes)
+
+    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
+}
+
+const handleGeneratePassword = () => {
+    const password = buildStrongPassword()
+    form$.value?.update({
+        password,
+        password_confirmation: password,
+    })
+    showPassword.value = true
+}
+
+const togglePasswordVisibility = () => {
+    showPassword.value = !showPassword.value
+}
 
 const confirmResetPassword = async () => {
     showResetConfirmationModal.value = false;

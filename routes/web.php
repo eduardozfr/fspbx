@@ -34,7 +34,6 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MessageSettingsController;
 use App\Http\Controllers\PhoneNumbersController;
 use App\Http\Controllers\PolycomLogController;
-use App\Http\Controllers\ProFeaturesController;
 use App\Http\Controllers\ProvisioningController;
 use App\Http\Controllers\RecordingsController;
 use App\Http\Controllers\RegistrationsController;
@@ -50,6 +49,7 @@ use App\Http\Controllers\VirtualReceptionistController;
 use App\Http\Controllers\VoicemailController;
 use App\Http\Controllers\VoicemailMessagesController;
 use App\Http\Controllers\WakeupCallsController;
+use App\Http\Controllers\WebPhoneController;
 use App\Http\Controllers\WhitelistedNumbersController;
 use Illuminate\Support\Facades\Route;
 
@@ -150,6 +150,8 @@ Route::group(['middleware' => 'auth'], function () {
     // Route::post('user/{user}/settings', [UserSettingsController::class, 'store'])->name('users.settings.store');
     // Route::delete('user/settings/{setting}', [UserSettingsController::class, 'destroy'])->name('users.settings.destroy');
     Route::post('user/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('users.password.email');
+    Route::get('web-phone', [WebPhoneController::class, 'index'])->name('web-phone.index');
+    Route::get('web-phone/config', [WebPhoneController::class, 'config'])->name('web-phone.config');
 
     // Groups
     Route::get('groups', [GroupsController::class, 'index'])->name('groups.index');
@@ -382,14 +384,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::resource('active-calls', ActiveCallsController::class);
     Route::post('/active-calls/select-all', [ActiveCallsController::class, 'selectAll'])->name('active-calls.select.all');
     Route::post('/active-calls/action', [ActiveCallsController::class, 'handleAction'])->name('active-calls.action');
-
-    // Pro Features
-    Route::resource('pro-features', ProFeaturesController::class);
-    // Route::post('/pro-features/action', [ProFeaturesController::class, 'handleAction'])->name('pro-features.action');
-    Route::post('pro-features/item-options', [ProFeaturesController::class, 'getItemOptions'])->name('pro-features.item.options');
-    Route::post('pro-features/activate', [ProFeaturesController::class, 'activate'])->name('pro-features.activate');
-    Route::post('pro-features/install', [ProFeaturesController::class, 'install'])->name('pro-features.install');
-    Route::post('pro-features/uninstall', [ProFeaturesController::class, 'uninstall'])->name('pro-features.uninstall');
 
 
     // Cloud Provisioning

@@ -12,7 +12,9 @@ use App\Models\Extensions;
 use Illuminate\Support\Str;
 use App\Models\DomainGroups;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Spatie\QueryBuilder\QueryBuilder;
 use Illuminate\Support\Facades\Schema;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -314,6 +316,9 @@ class UsersController extends Controller
     {
         $data        = $request->validated();
         $domain_uuid = session('domain_uuid');
+        $providedPassword = trim((string) ($data['password'] ?? ''));
+        $passwordWasGenerated = $providedPassword === '';
+        $plainPassword = $passwordWasGenerated ? generate_password() : $providedPassword;
 
         // build username: slug of first_name + (optional '_' + slug(last_name))
         $username = Str::slug($data['first_name'], '_')
@@ -326,6 +331,7 @@ class UsersController extends Controller
             $user = User::create([
                 'username'     => $username,
                 'user_email'   => $data['user_email'],
+                'password'     => Hash::make($plainPassword),
                 'user_enabled' => $data['user_enabled'] ?? 'true',
                 'domain_uuid'  => $data['domain_uuid'] ?? session('domain_uuid'),
             ]);
@@ -387,6 +393,7 @@ class UsersController extends Controller
             return response()->json([
                 'messages' => ['success' => ['User created']],
                 'user_uuid' => $user->user_uuid,
+                'generated_password' => $passwordWasGenerated ? $plainPassword : null,
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -409,9 +416,15 @@ class UsersController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-
         $validated   = $request->validated();
         $domain_uuid = session('domain_uuid');
+        $payload = Arr::except($validated, ['password_confirmation']);
+
+        if (!empty($payload['password'])) {
+            $payload['password'] = Hash::make($payload['password']);
+        } else {
+            unset($payload['password']);
+        }
         // logger($validated);
 
         try {
@@ -421,13 +434,13 @@ class UsersController extends Controller
             $user->user_adv_fields()->updateOrCreate(
                 ['user_uuid' => $user->user_uuid],
                 [
-                    'first_name' => $validated['first_name'] ?? null,
-                    'last_name'  => $validated['last_name']  ?? null,
+                    'first_name' => $payload['first_name'] ?? null,
+                    'last_name'  => $payload['last_name']  ?? null,
                 ]
             );
 
             // 2) Core user updates
-            $user->update($validated);
+            $user->update($payload);
 
             // 3) Domain settings: language & time_zone
             foreach (['language', 'time_zone'] as $field) {
@@ -437,22 +450,22 @@ class UsersController extends Controller
                         'user_setting_subcategory' => $field,
                     ],
                     [
-                        'user_setting_value'   => $validated[$field] ?? null,
+                        'user_setting_value'   => $payload[$field] ?? null,
                         'user_setting_enabled' => true,
                     ]
                 );
             }
 
             // 4) User groups
-            if (!empty($validated['groups']) && is_array($validated['groups'])) {
-                $groupNames = Groups::whereIn('group_uuid', $validated['groups'])
+            if (!empty($payload['groups']) && is_array($payload['groups'])) {
+                $groupNames = Groups::whereIn('group_uuid', $payload['groups'])
                     ->pluck('group_name', 'group_uuid');
 
                 // Delete existing group relations for the user
                 $user->user_groups()->delete();
 
                 // Add new group relations
-                foreach ($validated['groups'] as $groupUuid) {
+                foreach ($payload['groups'] as $groupUuid) {
                     $user->user_groups()->create([
                         'group_uuid'  => $groupUuid,
                         'domain_uuid' => $domain_uuid,
@@ -464,9 +477,9 @@ class UsersController extends Controller
             // 5) Domain Permissions (Accounts)
             // Remove existing permissions for this user
             $user->domain_permissions()->delete();
-            if (isset($validated['accounts']) && is_array($validated['accounts'])) {
+            if (isset($payload['accounts']) && is_array($payload['accounts'])) {
                 // Add new permissions
-                foreach ($validated['accounts'] as $domainUuid) {
+                foreach ($payload['accounts'] as $domainUuid) {
                     $user->domain_permissions()->create([
                         'user_uuid'   => $user->user_uuid,
                         'domain_uuid' => $domainUuid,
@@ -477,9 +490,9 @@ class UsersController extends Controller
             // 6) Domain Group Permissions (Account Groups)
             // Remove existing group permissions for this user
             $user->domain_group_permissions()->delete();
-            if (isset($validated['account_groups']) && is_array($validated['account_groups'])) {
+            if (isset($payload['account_groups']) && is_array($payload['account_groups'])) {
                 // Add new group permissions
-                foreach ($validated['account_groups'] as $domainGroupUuid) {
+                foreach ($payload['account_groups'] as $domainGroupUuid) {
                     $user->domain_group_permissions()->create([
                         'user_uuid'         => $user->user_uuid,
                         'domain_group_uuid' => $domainGroupUuid,
@@ -489,8 +502,8 @@ class UsersController extends Controller
 
             // 7) Locations (polymorphic pivot)
             $user->locations()->detach(); // Remove existing links
-            if (!empty($validated['locations']) && is_array($validated['locations'])) {
-                foreach ($validated['locations'] as $locationUuid) {
+            if (!empty($payload['locations']) && is_array($payload['locations'])) {
+                foreach ($payload['locations'] as $locationUuid) {
                     $user->locations()->attach($locationUuid);
                 }
             }
