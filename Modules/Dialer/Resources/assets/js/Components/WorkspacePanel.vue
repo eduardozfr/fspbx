@@ -194,6 +194,9 @@ const campaignSummaryCards = computed(() => {
         { label: 'Daily retry limit', value: Number(campaign.daily_retry_limit || 0) || '-' },
         { label: 'Retry backoff (minutes)', value: Number(campaign.retry_backoff_minutes || 0) || '-' },
         { label: 'Compliance anchor', value: campaign.compliance_profile_name || campaign.default_state_code || t('National baseline') },
+        { label: 'Max inflight calls', value: ['progressive', 'power'].includes(campaign.mode) ? (campaign.max_inflight_calls || t('Driven by pacing')) : t('Agent paced') },
+        { label: 'AMD source', value: campaign.amd_enabled ? (campaign.amd_strategy === 'external-webhook' ? t('External webhook') : t('Native AVMD')) : t('Disabled') },
+        { label: 'Voicemail action', value: campaign.amd_enabled ? (campaign.voicemail_action === 'continue' ? t('Continue') : t('Hang up')) : t('Not used') },
     ]
 })
 const readinessItems = computed(() => {
@@ -204,6 +207,8 @@ const readinessItems = computed(() => {
         { label: 'Queue handoff ready', hint: 'Progressive and power need a staffed queue.', ok: campaign.mode === 'manual' || campaign.mode === 'preview' || Boolean(campaign.call_center_queue_uuid) },
         { label: 'Compliance anchor set', hint: 'Use a state baseline or a custom compliance profile.', ok: Boolean(campaign.default_state_code || campaign.compliance_profile_name) },
         { label: 'Retry policy configured', hint: 'Backoff and daily cap should be explicit.', ok: Number(campaign.retry_backoff_minutes || 0) > 0 && Number(campaign.daily_retry_limit || 0) > 0 },
+        { label: 'AMD operating model defined', hint: 'Native AVMD is recommended when the platform should detect voicemail internally.', ok: !campaign.amd_enabled || campaign.amd_strategy !== 'external-webhook' || Boolean(campaign.webhook_url) },
+        { label: 'Concurrent call guardrail set', hint: 'Automated campaigns should have a clear inflight ceiling or an intentional pacing-only policy.', ok: !['progressive', 'power'].includes(campaign.mode) || !campaign.max_inflight_calls || Number(campaign.max_inflight_calls) >= 1 },
     ]
 })
 watch(selectedCampaignUuid, () => {
@@ -220,6 +225,11 @@ const previewCampaign = async () => {
     try {
         const response = await axios.get(routeFor(props.routes.previewCampaign || '/dialer/campaigns/__CAMPAIGN__/preview', '__CAMPAIGN__', selectedCampaignUuid.value))
         previewLead.value = response.data?.lead || null
+        if (previewLead.value) {
+            setMessage('success', t('Preview lead loaded successfully.'))
+        } else {
+            setMessage('error', t('No callable preview lead is available right now.'))
+        }
     } catch (error) {
         setMessage('error', error.response?.data?.messages?.error?.[0] || t('Unable to fetch the preview lead right now.'))
     }

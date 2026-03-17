@@ -1028,6 +1028,15 @@ else
     exit 1
 fi
 
+# Copy FS ELS Dialer Listener configuration to Supervisor
+sudo cp install/fs-esl-listener-dialer.conf /etc/supervisor/conf.d/
+if [ $? -eq 0 ]; then
+    print_success "FS ELS Dialer Listener configuration file copied to Supervisor successfully."
+else
+    print_error "Error occurred while copying FS ELS Dialer Listener configuration file to Supervisor."
+    exit 1
+fi
+
 # Copy Laravel Reverb configuration to Supervisor
 sudo cp install/reverb.conf /etc/supervisor/conf.d/
 if [ $? -eq 0 ]; then
@@ -1084,6 +1093,16 @@ if [ $? -eq 0 ]; then
     print_success "FS ELS Emergency process restarted successfully."
 else
     print_error "Error occurred while restarting FS ELS Emergency process."
+    exit 1
+fi
+
+# Restart FS ELS Dialer process under Supervisor
+sudo supervisorctl restart fs-esl-listener-dialer || sudo supervisorctl start fs-esl-listener-dialer
+if [ $? -eq 0 ]; then
+    sleep 6
+    print_success "FS ELS Dialer process restarted successfully."
+else
+    print_error "Error occurred while restarting FS ELS Dialer process."
     exit 1
 fi
 

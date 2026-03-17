@@ -172,6 +172,7 @@ class DialerApiController extends Controller
             'call_center_queue_uuid' => ['nullable', 'uuid'],
             'dialer_compliance_profile_uuid' => ['nullable', 'uuid'],
             'pacing_ratio' => ['nullable', 'numeric', 'min:1', 'max:10'],
+            'max_inflight_calls' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'preview_seconds' => ['nullable', 'integer', 'min:5', 'max:3600'],
             'originate_timeout' => ['nullable', 'integer', 'min:5', 'max:120'],
             'max_attempts' => ['nullable', 'integer', 'min:1', 'max:25'],
@@ -184,6 +185,10 @@ class DialerApiController extends Controller
             'webhook_secret' => ['nullable', 'string', 'max:255'],
             'callback_disposition_code' => ['nullable', 'string', 'max:50'],
             'voicemail_disposition_code' => ['nullable', 'string', 'max:50'],
+            'busy_disposition_code' => ['nullable', 'string', 'max:50'],
+            'no_answer_disposition_code' => ['nullable', 'string', 'max:50'],
+            'invalid_number_disposition_code' => ['nullable', 'string', 'max:50'],
+            'voicemail_action' => ['nullable', Rule::in(['hangup', 'continue'])],
         ]);
 
         $validated['default_state_code'] = isset($validated['default_state_code']) ? strtoupper($validated['default_state_code']) : null;

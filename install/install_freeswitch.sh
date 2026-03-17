@@ -156,6 +156,7 @@ sed -i modules.conf -e s:'#applications/mod_cidlookup:applications/mod_cidlookup
 sed -i modules.conf -e s:'#applications/mod_memcache:applications/mod_memcache:'
 sed -i modules.conf -e s:'#applications/mod_curl:applications/mod_curl:'
 sed -i modules.conf -e s:'#applications/mod_translate:applications/mod_translate:'
+sed -i modules.conf -e s:'#applications/mod_avmd:applications/mod_avmd:'
 sed -i modules.conf -e s:'#formats/mod_shout:formats/mod_shout:'
 sed -i modules.conf -e s:'#formats/mod_pgsql:formats/mod_pgsql:'
 sed -i modules.conf -e s:'#applications/mod_signalwire:applications/mod_signalwire:'
@@ -193,6 +194,14 @@ fi
 mv /etc/freeswitch /etc/freeswitch.orig
 mkdir /etc/freeswitch
 cp -R /var/www/fspbx/public/app/switch/resources/conf/* /etc/freeswitch
+
+if [ -f "/etc/freeswitch/autoload_configs/modules.conf.xml" ]; then
+    if grep -q '<!--[[:space:]]*<load module="mod_avmd"[[:space:]]*/>[[:space:]]*-->' /etc/freeswitch/autoload_configs/modules.conf.xml; then
+        sed -i 's#<!--[[:space:]]*<load module="mod_avmd"[[:space:]]*/>[[:space:]]*-->#<load module="mod_avmd"/>#' /etc/freeswitch/autoload_configs/modules.conf.xml
+    elif ! grep -q 'load module="mod_avmd"' /etc/freeswitch/autoload_configs/modules.conf.xml; then
+        sed -i '/<modules>/a\  <load module="mod_avmd"/>' /etc/freeswitch/autoload_configs/modules.conf.xml
+    fi
+fi
 
 # Default permissions
 chown -R www-data:www-data /etc/freeswitch

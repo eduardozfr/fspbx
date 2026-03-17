@@ -7,7 +7,7 @@
                         <div>
                             <div class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-100">{{ t('Dialer') }}</div>
                             <h1 class="mt-4 text-3xl font-semibold tracking-tight lg:text-4xl">{{ t('Professional outbound workspace') }}</h1>
-                            <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{{ t('Run assisted and automated outbound operations from a clearer workspace that separates launch, compliance, and outcome control.') }}</p>
+                            <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{{ t('Run assisted and automated outbound operations from a clearer workspace that separates launch, compliance, native AMD, and outcome control.') }}</p>
                         </div>
                         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
                             <article class="rounded-3xl bg-white/5 p-4"><div class="text-[11px] uppercase tracking-[0.24em] text-slate-300">{{ t('Campaigns') }}</div><div class="mt-3 text-3xl font-semibold">{{ formatNumber(metrics.campaigns) }}</div></article>
@@ -44,6 +44,7 @@
                 <StudioPanel
                     v-else-if="activeTab === 'studio'"
                     :campaigns="campaigns"
+                    :dispositions="dispositions"
                     :compliance-profiles="complianceProfiles"
                     :options="options"
                     :routes="routes"
@@ -125,6 +126,9 @@ const alerts = computed(() => {
     props.campaigns.forEach((campaign) => {
         if (['progressive', 'power'].includes(campaign.mode) && !campaign.call_center_queue_uuid) items.push({ severity: 'critical', title: 'Automated campaign without queue handoff', description: `${campaign.name} is configured for ${campaign.mode} dialing but has no queue for answered calls.` })
         if (campaign.status === 'active' && !campaign.respect_dnc) items.push({ severity: 'warning', title: 'Campaign bypassing DNC protection', description: `${campaign.name} is active without enforcing the do-not-call list.` })
+        if (campaign.mode === 'power' && campaign.status === 'active' && !campaign.amd_enabled) items.push({ severity: 'warning', title: 'Power campaign running without AMD', description: `${campaign.name} is active in power mode without native or external voicemail detection.` })
+        if (campaign.amd_enabled && campaign.amd_strategy === 'external-webhook' && !campaign.webhook_url) items.push({ severity: 'critical', title: 'External AMD is missing a webhook', description: `${campaign.name} expects an external AMD result but has no webhook URL configured.` })
+        if (Number(campaign.max_inflight_calls || 0) > 0 && Number(campaign.calling_leads_count || 0) > Number(campaign.max_inflight_calls || 0)) items.push({ severity: 'warning', title: 'Concurrent calls above the configured ceiling', description: `${campaign.name} currently has more calling leads than the configured max inflight call ceiling.` })
     })
     if (!props.complianceProfiles.some((profile) => !profile.is_system)) items.push({ severity: 'warning', title: 'Custom compliance profiles not configured', description: 'Create at least one operation-specific profile so campaigns carry explicit governance.' })
     return items

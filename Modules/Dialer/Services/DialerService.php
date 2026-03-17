@@ -138,9 +138,18 @@ class DialerService
         }
 
         $availableAgents = max(1, $this->countReadyAgents($campaign->queue));
-        $dialCount = $campaign->mode === 'power'
+        $projectedDialCount = $campaign->mode === 'power'
             ? max(1, (int) ceil($availableAgents * (float) $campaign->pacing_ratio))
             : $availableAgents;
+        $activeCallingCount = DialerCampaignLead::query()
+            ->where('campaign_uuid', $campaign->uuid)
+            ->where('status', 'calling')
+            ->count();
+        $maxInflightCalls = $campaign->max_inflight_calls
+            ? max(1, (int) $campaign->max_inflight_calls)
+            : $projectedDialCount;
+        $remainingInflightCapacity = max(0, $maxInflightCalls - $activeCallingCount);
+        $dialCount = min($projectedDialCount, $remainingInflightCapacity);
 
         $dialed = 0;
 
@@ -294,7 +303,7 @@ class DialerService
 
         $dispositionCode = data_get($payload, 'data.disposition', data_get($payload, 'disposition'));
 
-        if (! $dispositionCode) {
+        if (! $dispositionCode && $this->isFinalAttemptPayload($payload, $attempt)) {
             $dispositionCode = $this->inferDispositionFromPayload($attempt, $payload);
         }
 
@@ -486,6 +495,7 @@ class DialerService
             'default_state_code' => strtoupper((string) $this->blankToNull($payload['default_state_code'] ?? null)) ?: null,
             'default_timezone' => $this->blankToNull($payload['default_timezone'] ?? null),
             'pacing_ratio' => (float) ($payload['pacing_ratio'] ?? 1),
+            'max_inflight_calls' => $this->blankToNull($payload['max_inflight_calls'] ?? null),
             'preview_seconds' => (int) ($payload['preview_seconds'] ?? 30),
             'originate_timeout' => (int) ($payload['originate_timeout'] ?? 30),
             'max_attempts' => (int) ($payload['max_attempts'] ?? 3),
@@ -493,15 +503,31 @@ class DialerService
             'daily_retry_limit' => (int) ($payload['daily_retry_limit'] ?? 3),
             'respect_dnc' => (bool) ($payload['respect_dnc'] ?? true),
             'amd_enabled' => (bool) ($payload['amd_enabled'] ?? false),
-            'amd_strategy' => $this->blankToNull($payload['amd_strategy'] ?? null) ?: 'webhook',
+            'amd_strategy' => $this->blankToNull($payload['amd_strategy'] ?? null) ?: 'avmd',
             'webhook_url' => $this->blankToNull($payload['webhook_url'] ?? null),
             'webhook_secret' => $this->blankToNull($payload['webhook_secret'] ?? null),
             'callback_disposition_code' => $this->blankToNull($payload['callback_disposition_code'] ?? null) ?: 'callback',
             'voicemail_disposition_code' => $this->blankToNull($payload['voicemail_disposition_code'] ?? null) ?: 'voicemail',
+            'busy_disposition_code' => $this->blankToNull($payload['busy_disposition_code'] ?? null) ?: 'busy',
+            'no_answer_disposition_code' => $this->blankToNull($payload['no_answer_disposition_code'] ?? null) ?: 'no-answer',
+            'invalid_number_disposition_code' => $this->blankToNull($payload['invalid_number_disposition_code'] ?? null) ?: 'invalid-number',
+            'voicemail_action' => $this->blankToNull($payload['voicemail_action'] ?? null) ?: 'hangup',
         ];
+
+        $attributes['max_inflight_calls'] = $attributes['max_inflight_calls'] !== null
+            ? max(1, (int) $attributes['max_inflight_calls'])
+            : null;
 
         if (in_array($attributes['mode'], ['progressive', 'power'], true) && ! $attributes['call_center_queue_uuid']) {
             throw new RuntimeException('Select a queue before activating progressive or power dialing.');
+        }
+
+        if ($attributes['amd_enabled'] && $attributes['amd_strategy'] === 'external-webhook' && ! $attributes['webhook_url']) {
+            throw new RuntimeException('Provide a webhook URL before using external AMD.');
+        }
+
+        if (! in_array($attributes['voicemail_action'], ['hangup', 'continue'], true)) {
+            throw new RuntimeException('Select a valid voicemail action.');
         }
 
         if ($attributes['call_center_queue_uuid']) {
@@ -527,6 +553,32 @@ class DialerService
 
             if (! $profileExists) {
                 throw new RuntimeException('Select a valid compliance profile for this campaign.');
+            }
+        }
+
+        foreach ([
+            'callback_disposition_code' => 'callback disposition',
+            'voicemail_disposition_code' => 'voicemail disposition',
+            'busy_disposition_code' => 'busy disposition',
+            'no_answer_disposition_code' => 'no-answer disposition',
+            'invalid_number_disposition_code' => 'invalid-number disposition',
+        ] as $attribute => $label) {
+            $code = $attributes[$attribute] ?? null;
+
+            if (! $code) {
+                continue;
+            }
+
+            $exists = DialerDisposition::query()
+                ->where('code', $code)
+                ->where(function ($query) use ($domainUuid) {
+                    $query->whereNull('domain_uuid')
+                        ->orWhere('domain_uuid', $domainUuid);
+                })
+                ->exists();
+
+            if (! $exists) {
+                throw new RuntimeException('Select a valid ' . $label . ' code.');
             }
         }
 
@@ -595,7 +647,11 @@ class DialerService
 
         if ($campaign->amd_enabled) {
             $parts[] = 'dialer_amd_enabled=true';
-            $parts[] = "execute_on_answer='avmd_start'";
+            $parts[] = 'dialer_amd_strategy=' . ($campaign->amd_strategy ?: 'avmd');
+
+            if (($campaign->amd_strategy ?: 'avmd') === 'avmd') {
+                $parts[] = "execute_on_answer='avmd_start'";
+            }
         }
 
         return implode(',', $parts);
@@ -814,23 +870,53 @@ class DialerService
                 ->first();
         }
 
+        $callUuid = data_get($payload, 'data.call_uuid', data_get($payload, 'call_uuid'));
+
+        if ($callUuid) {
+            return DialerAttempt::query()
+                ->with(['campaign', 'lead'])
+                ->where('call_uuid', $callUuid)
+                ->latest('created_at')
+                ->first();
+        }
+
         return null;
+    }
+
+    protected function isFinalAttemptPayload(array $payload, DialerAttempt $attempt): bool
+    {
+        $event = (string) data_get($payload, 'event', '');
+
+        if (in_array($event, ['dialer_attempt_completed', 'dialer_attempt_updated'], true)) {
+            return true;
+        }
+
+        if (data_get($payload, 'data.completed_at') || data_get($payload, 'completed_at')) {
+            return true;
+        }
+
+        if (data_get($payload, 'data.hangup_cause') || data_get($payload, 'hangup_cause')) {
+            return true;
+        }
+
+        return (bool) $attempt->completed_at;
     }
 
     protected function inferDispositionFromPayload(DialerAttempt $attempt, array $payload): ?string
     {
-        $amdResult = strtolower((string) data_get($payload, 'data.amd_result', data_get($payload, 'amd_result', '')));
-        $hangupCause = strtoupper((string) data_get($payload, 'data.hangup_cause', data_get($payload, 'hangup_cause', '')));
+        $campaign = $attempt->campaign;
+        $amdResult = strtolower((string) data_get($payload, 'data.amd_result', data_get($payload, 'amd_result', $attempt->amd_result ?? '')));
+        $hangupCause = strtoupper((string) data_get($payload, 'data.hangup_cause', data_get($payload, 'hangup_cause', $attempt->hangup_cause ?? '')));
         $talkSeconds = (int) data_get($payload, 'data.talk_seconds', data_get($payload, 'talk_seconds', $attempt->talk_seconds ?? 0));
 
-        if (in_array($amdResult, ['machine', 'voicemail'], true)) {
-            return $attempt->campaign?->voicemail_disposition_code ?: 'voicemail';
+        if ($campaign?->amd_enabled && in_array($amdResult, ['machine', 'voicemail'], true)) {
+            return $campaign->voicemail_disposition_code ?: 'voicemail';
         }
 
         return match ($hangupCause) {
-            'USER_BUSY' => 'busy',
-            'NO_ANSWER', 'NO_USER_RESPONSE', 'ALLOTTED_TIMEOUT' => 'no-answer',
-            'UNALLOCATED_NUMBER', 'NUMBER_CHANGED', 'NO_ROUTE_DESTINATION' => 'invalid-number',
+            'USER_BUSY' => $campaign?->busy_disposition_code ?: 'busy',
+            'NO_ANSWER', 'NO_USER_RESPONSE', 'ALLOTTED_TIMEOUT' => $campaign?->no_answer_disposition_code ?: 'no-answer',
+            'UNALLOCATED_NUMBER', 'NUMBER_CHANGED', 'NO_ROUTE_DESTINATION' => $campaign?->invalid_number_disposition_code ?: 'invalid-number',
             default => $talkSeconds > 0 ? 'contacted' : null,
         };
     }

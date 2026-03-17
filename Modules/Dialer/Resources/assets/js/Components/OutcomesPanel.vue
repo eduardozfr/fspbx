@@ -89,7 +89,8 @@ const attemptForms = reactive(Object.fromEntries(props.attempts.map((attempt) =>
 
 const setMessage = (type, text) => { message.type = type; message.text = text }
 const routeFor = (template, token, value) => (template || '').replace(token, value)
-const reloadPage = () => window.location.reload()
-const submitDisposition = async () => { try { await axios.post(props.routes.storeDisposition || '/dialer/dispositions', dispositionForm); reloadPage() } catch (error) { setMessage('error', error.response?.data?.messages?.error?.[0] || t('Unable to save the disposition right now.')) } }
-const saveAttemptDisposition = async (attemptUuid) => { try { await axios.post(routeFor(props.routes.saveAttemptDisposition || '/dialer/attempts/__ATTEMPT__/disposition', '__ATTEMPT__', attemptUuid), attemptForms[attemptUuid]); reloadPage() } catch (error) { setMessage('error', error.response?.data?.messages?.error?.[0] || t('Unable to save the disposition right now.')) } }
+const reloadPage = (delay = 1100) => window.setTimeout(() => window.location.reload(), delay)
+const succeedAndReload = (text) => { setMessage('success', text); reloadPage() }
+const submitDisposition = async () => { try { const response = await axios.post(props.routes.storeDisposition || '/dialer/dispositions', dispositionForm); succeedAndReload(response.data?.messages?.success?.[0] || t('Disposition saved successfully.')) } catch (error) { setMessage('error', error.response?.data?.messages?.error?.[0] || t('Unable to save the disposition right now.')) } }
+const saveAttemptDisposition = async (attemptUuid) => { try { const response = await axios.post(routeFor(props.routes.saveAttemptDisposition || '/dialer/attempts/__ATTEMPT__/disposition', '__ATTEMPT__', attemptUuid), attemptForms[attemptUuid]); succeedAndReload(response.data?.messages?.success?.[0] || t('Attempt disposition saved successfully.')) } catch (error) { setMessage('error', error.response?.data?.messages?.error?.[0] || t('Unable to save the disposition right now.')) } }
 </script>

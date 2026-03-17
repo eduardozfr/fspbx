@@ -18,6 +18,7 @@ class DialerCampaign extends Model
 
     protected $casts = [
         'pacing_ratio' => 'decimal:2',
+        'max_inflight_calls' => 'integer',
         'last_executed_at' => 'datetime',
         'respect_dnc' => 'boolean',
         'amd_enabled' => 'boolean',
