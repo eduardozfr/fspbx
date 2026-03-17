@@ -56,19 +56,19 @@
                                     user_enabled: options?.item?.user_enabled ?? true,
                                     language: options?.item?.language ?? null,
                                     extension_uuid: options?.item?.extension_uuid ?? null,
-                                    groups: options.item.user_groups
+                                    groups: options?.item?.user_groups
                                         ? options.item.user_groups.map(ug => ug.group_uuid)
                                         : [],
 
-                                    accounts: options.item.domain_permissions
+                                    accounts: options?.item?.domain_permissions
                                         ? options.item.domain_permissions.map(item => item.domain_uuid)
                                         : [],
 
-                                    account_groups: options.item.domain_group_permissions
+                                    account_groups: options?.item?.domain_group_permissions
                                         ? options.item.domain_group_permissions.map(item => item.domain_group_uuid)
                                         : [],
 
-                                    locations: options.item.locations
+                                    locations: options?.item?.locations
                                         ? options.item.locations.map(l => l.location_uuid)
                                         : [],
 
@@ -140,12 +140,12 @@
                                                             Unique ID
                                                         </div>
 
-                                                        <div class="flex items-center group">
-                                                            <span class="text-sm text-gray-900 select-all font-normal">
-                                                                {{ options.item.user_uuid }}
+                                                            <div class="flex items-center group">
+                                                                <span class="text-sm text-gray-900 select-all font-normal">
+                                                                {{ options?.item?.user_uuid }}
                                                             </span>
                                                             <button type="button"
-                                                                @click="handleCopyToClipboard(options.item.user_uuid)"
+                                                                @click="handleCopyToClipboard(options?.item?.user_uuid)"
                                                                 class="ml-2 p-1 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
                                                                 title="Copy to clipboard">
                                                                 <!-- Small Copy Icon -->
@@ -477,7 +477,7 @@ const confirmResetPassword = async () => {
         await form$.value.$vueform.services.axios.post(
             props.options.routes.password_reset,
             {
-                email: props.options.item.user_email,
+                email: props.options?.item?.user_email,
             }
         );
 
@@ -504,7 +504,7 @@ const getTokens = async () => {
     isTokensLoading.value = true
     axios.get(props.options.routes.tokens, {
         params: {
-            uuid: props.options.item.user_uuid
+            uuid: props.options?.item?.user_uuid
         }
     })
         .then((response) => {
@@ -528,7 +528,7 @@ const getLocations = async () => {
     isLocationsLoading.value = true
     axios.get(props.options.routes.locations, {
         params: {
-            domain_uuid: props.options.item.domain_uuid
+            domain_uuid: props.options?.item?.domain_uuid
         }
     })
         .then((response) => {

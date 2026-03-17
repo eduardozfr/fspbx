@@ -49,14 +49,14 @@
 
                             <Vueform v-if="!loading" ref="form$" :endpoint="submitForm" @success="handleSuccess"
                                 @error="handleError" @response="handleResponse" :display-errors="false" :default="{
-                                    time_zone: options.item.time_zone,
-                                    user_email: options.item.user_email,
-                                    first_name: options.item.first_name,
-                                    last_name: options.item.last_name,
-                                    user_enabled: options.item.user_enabled,
-                                    language: options.item.language,
-                                    domain_uuid: options.item.domain_uuid,
-                                    groups: options.item.user_groups
+                                    time_zone: options?.item?.time_zone ?? null,
+                                    user_email: options?.item?.user_email ?? null,
+                                    first_name: options?.item?.first_name ?? null,
+                                    last_name: options?.item?.last_name ?? null,
+                                    user_enabled: options?.item?.user_enabled ?? true,
+                                    language: options?.item?.language ?? null,
+                                    domain_uuid: options?.item?.domain_uuid ?? null,
+                                    groups: options?.item?.user_groups
                                         ? options.item.user_groups.map(ug => ug.group_uuid)
                                         : []
 
