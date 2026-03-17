@@ -18,6 +18,10 @@
                     {{ status }}
                 </div>
 
+                <div v-if="errorMessage" class="mb-4 font-medium text-sm text-red-600 dark:text-red-400">
+                    {{ errorMessage }}
+                </div>
+
                 <form class="space-y-6" action="#" method="POST">
                     <div>
                         <label for="user_email" class="block text-sm font-medium leading-6 text-gray-900">Email
@@ -81,6 +85,7 @@ const form = useForm({
 
 const logoUrl = ref('/storage/logo.png');
 const isLoading = ref(false);
+const errorMessage = ref('');
 
 
 
@@ -100,7 +105,7 @@ const submitForm = () => {
     // );
 // };
 
-    axios.get('csrf-token/refresh')
+    axios.get(props.links['csrf-refresh'])
         .then((response) => {
             // Update the form's token value
             form._token = response.data.token;
@@ -113,7 +118,7 @@ const submitForm = () => {
                     // console.log(errors);
                 },
             });
-        }).catch((error) => {
+        }).catch(() => {
             errorMessage.value = "Invalid token. Refresh the page."
             isLoading.value = false; // Reset loading state on error
         });

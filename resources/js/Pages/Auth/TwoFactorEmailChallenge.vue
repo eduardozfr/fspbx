@@ -113,7 +113,7 @@ const submitForm = () => {
 
     isLoading.value = true;
 
-    axios.get('csrf-token/refresh')
+    axios.get(props.links['csrf-refresh'])
         .then((response) => {
             // Update the form's token value
             form._token = response.data.token;
@@ -123,7 +123,7 @@ const submitForm = () => {
                     isLoading.value = false;
                 }
             });
-        }).catch((error) => {
+        }).catch(() => {
             errorMessage.value = "Invalid token. Refresh the page."
             isLoading.value = false; // Reset loading state on error
         });
@@ -135,7 +135,7 @@ const requestNewCode = () => {
     isLoadingNewCode.value = true;
     form.reset('code');
 
-    axios.get('csrf-token/refresh')
+    axios.get(props.links['csrf-refresh'])
         .then((response) => {
             // Update the form's token value
             form._token = response.data.token;
@@ -145,9 +145,9 @@ const requestNewCode = () => {
                     isLoadingNewCode.value = false;
                 }
             });
-        }).catch((error) => {
+        }).catch(() => {
             errorMessage.value = "Invalid token. Refresh the page."
-            isLoading.value = false; // Reset loading state on error
+            isLoadingNewCode.value = false; // Reset loading state on error
         });
 }
 

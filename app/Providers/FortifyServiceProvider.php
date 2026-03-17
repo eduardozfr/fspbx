@@ -67,7 +67,9 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         Fortify::loginView(function () {
+            $links['login'] = route('login');
             $links['password-request'] = route('password.request');
+            $links['csrf-refresh'] = route('csrf-token.refresh');
             return Inertia::render('Auth/Login',[
                 'links' => function () use ($links) {
                     return $links;
@@ -79,6 +81,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::requestPasswordResetLinkView(function () {
             $links['login'] = route('login');
             $links['password-email'] = route('password.email');
+            $links['csrf-refresh'] = route('csrf-token.refresh');
             return Inertia::render('Auth/ForgotPassword',[
                 'links' => function () use ($links) {
                     return $links;

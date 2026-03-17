@@ -53,7 +53,8 @@ class EmailChallengeController extends Controller
 
         return Inertia::render('Auth/TwoFactorEmailChallenge', [
             'links' => [
-                'email-challenge' => "/email-challenge",
+                'email-challenge' => '/email-challenge',
+                'csrf-refresh' => route('csrf-token.refresh'),
             ],
             'status' => session('status'),
         ]);
@@ -120,7 +121,8 @@ class EmailChallengeController extends Controller
 
         return Inertia::render('Auth/TwoFactorEmailChallenge', [
             'links' => [
-                'email-challenge' => "/email-challenge",
+                'email-challenge' => '/email-challenge',
+                'csrf-refresh' => route('csrf-token.refresh'),
             ],
             'status' => 'Verification code has been resent',
         ]);

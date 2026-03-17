@@ -100,7 +100,7 @@ import { useLocale } from '../../composables/useLocale'
 const page = usePage()
 const { availableLocales, currentLocale, switchLocale, t } = useLocale()
 
-defineProps({
+const props = defineProps({
     errors: Object,
     links: Object,
     status: String,
@@ -121,11 +121,11 @@ const submitForm = () => {
     errorMessage.value = null
     isLoading.value = true
 
-    axios.get('csrf-token/refresh')
+    axios.get(props.links['csrf-refresh'])
         .then((response) => {
             form._token = response.data.token
 
-            form.post('/login', {
+            form.post(props.links.login, {
                 onFinish: () => {
                     form.reset('password')
                     isLoading.value = false

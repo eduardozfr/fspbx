@@ -93,8 +93,8 @@ Route::put('/email-challenge', [App\Http\Controllers\Auth\EmailChallengeControll
 Route::post('/email-challenge', [App\Http\Controllers\Auth\EmailChallengeController::class, 'store']);
 
 // Csrf token
-Route::get('/csrf-token/refresh', [CsrfTokenController::class, 'store']);
-Route::post('/locale', [LocaleController::class, 'update'])->name('locale.update');
+Route::get('/csrf-token/refresh', [CsrfTokenController::class, 'store'])->name('csrf-token.refresh');
+Route::match(['GET', 'POST'], '/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 // Get mobile app password
 Route::get('/mobile-app/get-password/{token}', [AppsCredentialsController::class, 'getPasswordByToken'])->name('appsGetPasswordByToken');
