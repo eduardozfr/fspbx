@@ -28,6 +28,11 @@ class DialerCampaign extends Model
         return $this->belongsTo(CallCenterQueues::class, 'call_center_queue_uuid', 'call_center_queue_uuid');
     }
 
+    public function complianceProfile()
+    {
+        return $this->belongsTo(DialerComplianceProfile::class, 'dialer_compliance_profile_uuid', 'uuid');
+    }
+
     public function campaignLeads()
     {
         return $this->hasMany(DialerCampaignLead::class, 'campaign_uuid', 'uuid');

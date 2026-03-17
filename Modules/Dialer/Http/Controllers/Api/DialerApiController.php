@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Modules\Dialer\Models\DialerCampaign;
 use Modules\Dialer\Models\DialerLead;
 use Modules\Dialer\Services\DialerService;
+use Throwable;
 
 class DialerApiController extends Controller
 {
@@ -40,9 +41,16 @@ class DialerApiController extends Controller
     {
         abort_unless(userCheckPermission('dialer_manage'), 403);
         $validated = $this->validateCampaign($request);
-        $validated['domain_uuid'] = $this->domainUuid();
 
-        $campaign = DialerCampaign::query()->create($validated);
+        try {
+            $campaign = $this->service->createCampaign($this->domainUuid(), $validated);
+        } catch (Throwable $error) {
+            report($error);
+
+            return response()->json([
+                'message' => __($error->getMessage() ?: 'Unable to create the campaign right now.'),
+            ], 422);
+        }
 
         return response()->json($campaign, 201);
     }
@@ -51,9 +59,18 @@ class DialerApiController extends Controller
     {
         abort_unless(userCheckPermission('dialer_manage'), 403);
         abort_unless($campaign->domain_uuid === $this->domainUuid(), 404);
-        $campaign->update($this->validateCampaign($request));
 
-        return response()->json($campaign->fresh());
+        try {
+            $campaign = $this->service->updateCampaign($campaign, $this->validateCampaign($request));
+        } catch (Throwable $error) {
+            report($error);
+
+            return response()->json([
+                'message' => __($error->getMessage() ?: 'Unable to update the campaign right now.'),
+            ], 422);
+        }
+
+        return response()->json($campaign);
     }
 
     public function destroyCampaign(DialerCampaign $campaign): JsonResponse
@@ -153,6 +170,7 @@ class DialerApiController extends Controller
             'default_state_code' => ['nullable', 'string', 'size:2'],
             'default_timezone' => ['nullable', 'string', 'max:100'],
             'call_center_queue_uuid' => ['nullable', 'uuid'],
+            'dialer_compliance_profile_uuid' => ['nullable', 'uuid'],
             'pacing_ratio' => ['nullable', 'numeric', 'min:1', 'max:10'],
             'preview_seconds' => ['nullable', 'integer', 'min:5', 'max:3600'],
             'originate_timeout' => ['nullable', 'integer', 'min:5', 'max:120'],

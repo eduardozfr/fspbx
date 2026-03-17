@@ -25,7 +25,7 @@ class CallCenterController extends Controller
             return redirect('/');
         }
 
-        return $this->renderPage('overview');
+        return $this->renderPage('operations');
     }
 
     public function settings()
@@ -34,7 +34,7 @@ class CallCenterController extends Controller
             return redirect('/');
         }
 
-        return $this->renderPage('settings');
+        return $this->renderPage('configuration');
     }
 
     public function storeQueue(Request $request): JsonResponse
@@ -361,16 +361,25 @@ class CallCenterController extends Controller
             'wallboard' => $data['wallboard'],
             'callbacks' => $data['callbacks'],
             'pauseReasons' => $data['pause_reasons'],
+            'alerts' => $data['alerts'],
+            'pauseBreakdown' => $data['pause_breakdown'],
             'options' => $data['options'],
             'initialTab' => $initialTab,
             'routes' => [
                 'index' => route('contact-center.index'),
                 'settings' => route('contact-center.settings'),
                 'storeQueue' => route('contact-center.queues.store'),
+                'updateQueue' => route('contact-center.queues.update', ['queue' => '__QUEUE__']),
+                'destroyQueue' => route('contact-center.queues.destroy', ['queue' => '__QUEUE__']),
                 'storeAgent' => route('contact-center.agents.store'),
+                'updateAgent' => route('contact-center.agents.update', ['agent' => '__AGENT__']),
+                'destroyAgent' => route('contact-center.agents.destroy', ['agent' => '__AGENT__']),
+                'pauseAgent' => route('contact-center.agents.pause', ['agent' => '__AGENT__']),
+                'resumeAgent' => route('contact-center.agents.resume', ['agent' => '__AGENT__']),
                 'storeUser' => route('contact-center.user.store'),
                 'storePauseReason' => route('contact-center.pause-reasons.store'),
                 'storeCallback' => route('contact-center.callbacks.store'),
+                'updateCallback' => route('contact-center.callbacks.update', ['callback' => '__CALLBACK__']),
                 'startMonitoring' => route('contact-center.monitoring.store'),
             ],
         ]);

@@ -16,6 +16,7 @@ use Modules\Dialer\Jobs\DispatchDialerWebhookJob;
 use Modules\Dialer\Models\DialerAttempt;
 use Modules\Dialer\Models\DialerCampaign;
 use Modules\Dialer\Models\DialerCampaignLead;
+use Modules\Dialer\Models\DialerComplianceProfile;
 use Modules\Dialer\Models\DialerDisposition;
 use Modules\Dialer\Models\DialerDncEntry;
 use Modules\Dialer\Models\DialerImportBatch;
@@ -29,6 +30,24 @@ class DialerService
     public function __construct(
         protected DialerComplianceService $compliance
     ) {}
+
+    public function createCampaign(string $domainUuid, array $payload): DialerCampaign
+    {
+        return DB::transaction(function () use ($domainUuid, $payload) {
+            $attributes = $this->prepareCampaignAttributes($domainUuid, $payload);
+
+            return DialerCampaign::query()->create($attributes);
+        });
+    }
+
+    public function updateCampaign(DialerCampaign $campaign, array $payload): DialerCampaign
+    {
+        return DB::transaction(function () use ($campaign, $payload) {
+            $campaign->update($this->prepareCampaignAttributes($campaign->domain_uuid, $payload));
+
+            return $campaign->fresh(['queue', 'complianceProfile']);
+        });
+    }
 
     public function nextLead(DialerCampaign $campaign): ?DialerCampaignLead
     {
@@ -368,8 +387,7 @@ class DialerService
         }
 
         $timezone = $this->resolveTimezone($campaign, $lead);
-        $rule = $this->resolveStateRule($campaign, $lead);
-        $schedule = $rule?->schedule;
+        $schedule = $this->resolveComplianceSchedule($campaign, $lead);
         $scheduledMoment = $moment->setTimezone($timezone);
 
         $dailyAttempts = DialerAttempt::query()
@@ -426,8 +444,7 @@ class DialerService
             : CarbonImmutable::now($timezone);
 
         $seed = $seed->addMinutes($backoffMinutes ?? $campaign->retry_backoff_minutes);
-        $rule = $this->resolveStateRule($campaign, $lead);
-        $evaluation = $this->compliance->evaluate($rule?->schedule, $timezone, $seed);
+        $evaluation = $this->compliance->evaluate($this->resolveComplianceSchedule($campaign, $lead), $timezone, $seed);
 
         return $evaluation['allowed']
             ? $seed
@@ -451,6 +468,69 @@ class DialerService
         }
 
         return str_starts_with($phoneNumber, '+') ? '+' . $digits : $digits;
+    }
+
+    public function prepareCampaignAttributes(string $domainUuid, array $payload): array
+    {
+        $attributes = [
+            'domain_uuid' => $domainUuid,
+            'name' => trim((string) ($payload['name'] ?? '')),
+            'description' => $this->blankToNull($payload['description'] ?? null),
+            'mode' => $payload['mode'] ?? 'manual',
+            'status' => $payload['status'] ?? 'draft',
+            'caller_id_name' => $this->blankToNull($payload['caller_id_name'] ?? null),
+            'caller_id_number' => $this->blankToNull($payload['caller_id_number'] ?? null),
+            'outbound_prefix' => $this->blankToNull($payload['outbound_prefix'] ?? null),
+            'call_center_queue_uuid' => $this->blankToNull($payload['call_center_queue_uuid'] ?? null),
+            'dialer_compliance_profile_uuid' => $this->blankToNull($payload['dialer_compliance_profile_uuid'] ?? null),
+            'default_state_code' => strtoupper((string) $this->blankToNull($payload['default_state_code'] ?? null)) ?: null,
+            'default_timezone' => $this->blankToNull($payload['default_timezone'] ?? null),
+            'pacing_ratio' => (float) ($payload['pacing_ratio'] ?? 1),
+            'preview_seconds' => (int) ($payload['preview_seconds'] ?? 30),
+            'originate_timeout' => (int) ($payload['originate_timeout'] ?? 30),
+            'max_attempts' => (int) ($payload['max_attempts'] ?? 3),
+            'retry_backoff_minutes' => (int) ($payload['retry_backoff_minutes'] ?? 30),
+            'daily_retry_limit' => (int) ($payload['daily_retry_limit'] ?? 3),
+            'respect_dnc' => (bool) ($payload['respect_dnc'] ?? true),
+            'amd_enabled' => (bool) ($payload['amd_enabled'] ?? false),
+            'amd_strategy' => $this->blankToNull($payload['amd_strategy'] ?? null) ?: 'webhook',
+            'webhook_url' => $this->blankToNull($payload['webhook_url'] ?? null),
+            'webhook_secret' => $this->blankToNull($payload['webhook_secret'] ?? null),
+            'callback_disposition_code' => $this->blankToNull($payload['callback_disposition_code'] ?? null) ?: 'callback',
+            'voicemail_disposition_code' => $this->blankToNull($payload['voicemail_disposition_code'] ?? null) ?: 'voicemail',
+        ];
+
+        if (in_array($attributes['mode'], ['progressive', 'power'], true) && ! $attributes['call_center_queue_uuid']) {
+            throw new RuntimeException('Select a queue before activating progressive or power dialing.');
+        }
+
+        if ($attributes['call_center_queue_uuid']) {
+            $queueExists = CallCenterQueues::query()
+                ->where('domain_uuid', $domainUuid)
+                ->where('call_center_queue_uuid', $attributes['call_center_queue_uuid'])
+                ->exists();
+
+            if (! $queueExists) {
+                throw new RuntimeException('Select a valid queue for this campaign.');
+            }
+        }
+
+        if ($attributes['dialer_compliance_profile_uuid']) {
+            $profileExists = DialerComplianceProfile::query()
+                ->where('uuid', $attributes['dialer_compliance_profile_uuid'])
+                ->where('is_active', true)
+                ->where(function ($query) use ($domainUuid) {
+                    $query->whereNull('domain_uuid')
+                        ->orWhere('domain_uuid', $domainUuid);
+                })
+                ->exists();
+
+            if (! $profileExists) {
+                throw new RuntimeException('Select a valid compliance profile for this campaign.');
+            }
+        }
+
+        return $attributes;
     }
 
     protected function startQueueCall(DialerCampaign $campaign, DialerCampaignLead $campaignLead): void
@@ -626,12 +706,55 @@ class DialerService
             : null;
     }
 
+    protected function resolveComplianceProfile(DialerCampaign $campaign, DialerLead $lead): ?DialerComplianceProfile
+    {
+        if (! $campaign->dialer_compliance_profile_uuid) {
+            return null;
+        }
+
+        $campaign->loadMissing('complianceProfile');
+        $profile = $campaign->complianceProfile;
+
+        if (! $profile || ! $profile->is_active) {
+            return null;
+        }
+
+        $stateCode = strtoupper($lead->state_code ?: $campaign->default_state_code ?: '');
+        $stateCodes = collect($profile->state_codes ?? [])
+            ->filter()
+            ->map(fn($code) => strtoupper((string) $code))
+            ->values()
+            ->all();
+
+        if ($stateCode && ! empty($stateCodes) && ! in_array($stateCode, $stateCodes, true)) {
+            return null;
+        }
+
+        return $profile;
+    }
+
+    protected function resolveComplianceSchedule(DialerCampaign $campaign, DialerLead $lead): array|string|null
+    {
+        return $this->resolveComplianceProfile($campaign, $lead)?->schedule
+            ?: $this->resolveStateRule($campaign, $lead)?->schedule;
+    }
+
     protected function resolveTimezone(DialerCampaign $campaign, DialerLead $lead): string
     {
+        $profileTimezone = $this->resolveComplianceProfile($campaign, $lead)?->timezone;
+
         return $lead->timezone
+            ?: $profileTimezone
             ?: $this->resolveStateRule($campaign, $lead)?->timezone
             ?: $campaign->default_timezone
             ?: config('app.timezone');
+    }
+
+    protected function blankToNull(mixed $value): mixed
+    {
+        return is_string($value) && trim($value) === ''
+            ? null
+            : $value;
     }
 
     protected function deferCampaignLead(DialerCampaignLead $campaignLead, CarbonInterface $nextCallableAt, ?string $reason = null): void

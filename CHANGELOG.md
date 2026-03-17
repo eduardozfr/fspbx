@@ -2,6 +2,12 @@
 
 ## 2026-03-16
 
+- Reworked the new `Dialer` experience around professional outbound patterns inspired by vendor guidance for guided workspaces, campaign studios, compliance governance, and disposition handling, splitting the UI into smaller operational panels with clearer flows and inline tooltips.
+- Hardened dialer campaign persistence by moving create/update normalization into the service layer, validating queue handoff and compliance profile compatibility, and returning actionable `422` responses instead of generic `500` errors when campaign payloads are invalid.
+- Added reusable custom dialer compliance profiles with CRUD flows, campaign assignment, and Anatel-aligned Brazilian baseline scheduling so teams can keep UF defaults while creating operation-specific governance profiles.
+- Reworked the `Contact Center` landing page into a more professional wallboard with stronger KPI coverage, queue coverage-gap visibility, supervision tools, and safer configuration flows that now use backend-provided routes instead of brittle hardcoded endpoints.
+- Fixed frontend compatibility issues introduced by the redesign, including a missing Vite alias for shared page components and tab-state mismatches between the new `Contact Center` UI and the backend initial-tab values.
+- Expanded PT-BR coverage for the redesigned dialer and contact center surfaces, especially for operational labels, guidance text, compliance wording, wallboard metrics, and inline validation feedback.
 - Added bilingual application support for `EN` and `PT-BR`, including a language switcher, Laravel locale middleware, shared Inertia locale data, and PT-BR translation files.
 - Added bundled `Call Center` and `Dialer` modules with routes, controllers, services, Vue pages, permissions, menu integration, dashboard shortcuts, scheduler support, and dialer migrations.
 - Added dialer modes for `manual`, `preview`, `progressive`, and `power/predictive`.

@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Modules\Dialer\Jobs\ImportDialerLeadsJob;
 use Modules\Dialer\Models\DialerCampaign;
 use Modules\Dialer\Models\DialerCampaignLead;
+use Modules\Dialer\Models\DialerComplianceProfile;
 use Modules\Dialer\Models\DialerDisposition;
 use Modules\Dialer\Models\DialerDncEntry;
 use Modules\Dialer\Models\DialerImportBatch;
@@ -35,7 +36,7 @@ class DialerController extends Controller
         }
 
         $campaigns = DialerCampaign::query()
-            ->with('queue')
+            ->with(['queue', 'complianceProfile'])
             ->withCount([
                 'campaignLeads as queued_leads_count' => fn($query) => $query->where('status', 'queued'),
                 'campaignLeads as calling_leads_count' => fn($query) => $query->where('status', 'calling'),
@@ -54,6 +55,8 @@ class DialerController extends Controller
                 'outbound_prefix' => $campaign->outbound_prefix,
                 'call_center_queue_uuid' => $campaign->call_center_queue_uuid,
                 'queue_label' => $campaign->queue ? ($campaign->queue->queue_extension . ' - ' . $campaign->queue->queue_name) : null,
+                'dialer_compliance_profile_uuid' => $campaign->dialer_compliance_profile_uuid,
+                'compliance_profile_name' => $campaign->complianceProfile?->name,
                 'pacing_ratio' => (float) $campaign->pacing_ratio,
                 'preview_seconds' => $campaign->preview_seconds,
                 'originate_timeout' => $campaign->originate_timeout,
@@ -184,6 +187,29 @@ class DialerController extends Controller
             ])
             ->values();
 
+        $complianceProfiles = DialerComplianceProfile::query()
+            ->where(function ($query) {
+                $query->whereNull('domain_uuid')
+                    ->orWhere('domain_uuid', session('domain_uuid'));
+            })
+            ->where('is_active', true)
+            ->orderByDesc('is_system')
+            ->orderBy('name')
+            ->get()
+            ->map(fn(DialerComplianceProfile $profile) => [
+                'uuid' => $profile->uuid,
+                'name' => $profile->name,
+                'description' => $profile->description,
+                'timezone' => $profile->timezone,
+                'state_codes' => $profile->state_codes ?? [],
+                'schedule' => $profile->schedule,
+                'schedule_summary' => $this->compliance->summarize($profile->schedule),
+                'notes' => $profile->notes,
+                'legal_reference_url' => $profile->legal_reference_url,
+                'is_system' => (bool) $profile->is_system,
+            ])
+            ->values();
+
         return Inertia::render('Index::Dialer', [
             'campaigns' => $campaigns,
             'leads' => $leads,
@@ -191,6 +217,7 @@ class DialerController extends Controller
             'dispositions' => $dispositions,
             'dncEntries' => $dncEntries,
             'stateRules' => $stateRules,
+            'complianceProfiles' => $complianceProfiles,
             'importBatches' => $importBatches,
             'options' => [
                 'queues' => CallCenterQueues::query()
@@ -235,10 +262,22 @@ class DialerController extends Controller
             ],
             'routes' => [
                 'storeCampaign' => route('dialer.campaigns.store'),
+                'updateCampaign' => route('dialer.campaigns.update', ['campaign' => '__CAMPAIGN__']),
+                'destroyCampaign' => route('dialer.campaigns.destroy', ['campaign' => '__CAMPAIGN__']),
+                'previewCampaign' => route('dialer.campaigns.preview', ['campaign' => '__CAMPAIGN__']),
+                'dialCampaign' => route('dialer.campaigns.dial', ['campaign' => '__CAMPAIGN__']),
+                'runCampaign' => route('dialer.campaigns.run', ['campaign' => '__CAMPAIGN__']),
                 'storeLead' => route('dialer.leads.store'),
+                'destroyLead' => route('dialer.leads.destroy', ['lead' => '__LEAD__']),
                 'storeDisposition' => route('dialer.dispositions.store'),
+                'saveAttemptDisposition' => route('dialer.attempts.disposition', ['attempt' => '__ATTEMPT__']),
                 'storeDnc' => route('dialer.dnc.store'),
+                'destroyDnc' => route('dialer.dnc.destroy', ['entry' => '__ENTRY__']),
                 'storeStateRule' => route('dialer.state-rules.store'),
+                'updateStateRule' => route('dialer.state-rules.update', ['stateRule' => '__STATE_RULE__']),
+                'storeComplianceProfile' => route('dialer.compliance-profiles.store'),
+                'updateComplianceProfile' => route('dialer.compliance-profiles.update', ['profile' => '__PROFILE__']),
+                'destroyComplianceProfile' => route('dialer.compliance-profiles.destroy', ['profile' => '__PROFILE__']),
                 'importLeads' => route('dialer.imports.store'),
             ],
         ]);
@@ -251,9 +290,16 @@ class DialerController extends Controller
         }
 
         $validated = $this->validateCampaign($request);
-        $validated['domain_uuid'] = session('domain_uuid');
 
-        DialerCampaign::query()->create($validated);
+        try {
+            $this->service->createCampaign(session('domain_uuid'), $validated);
+        } catch (Throwable $error) {
+            report($error);
+
+            return response()->json([
+                'messages' => ['error' => [__($error->getMessage() ?: 'Unable to create the campaign right now.')]],
+            ], 422);
+        }
 
         return response()->json(['messages' => ['success' => [__('Campaign created successfully.')]]]);
     }
@@ -266,7 +312,15 @@ class DialerController extends Controller
 
         abort_unless($campaign->domain_uuid === session('domain_uuid'), 404);
 
-        $campaign->update($this->validateCampaign($request));
+        try {
+            $this->service->updateCampaign($campaign, $this->validateCampaign($request));
+        } catch (Throwable $error) {
+            report($error);
+
+            return response()->json([
+                'messages' => ['error' => [__($error->getMessage() ?: 'Unable to update the campaign right now.')]],
+            ], 422);
+        }
 
         return response()->json(['messages' => ['success' => [__('Campaign updated successfully.')]]]);
     }
@@ -475,6 +529,78 @@ class DialerController extends Controller
         return response()->json(['messages' => ['success' => [__('State dialing rule saved successfully.')]]]);
     }
 
+    public function storeComplianceProfile(Request $request): JsonResponse
+    {
+        if (! userCheckPermission('dialer_manage')) {
+            return response()->json(['messages' => ['error' => [__('Forbidden.')]]], 403);
+        }
+
+        $validated = $this->validateComplianceProfile($request);
+
+        DialerComplianceProfile::query()->create([
+            'domain_uuid' => session('domain_uuid'),
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'timezone' => $validated['timezone'] ?? null,
+            'state_codes' => collect($validated['state_codes'] ?? [])
+                ->filter()
+                ->map(fn($code) => strtoupper((string) $code))
+                ->values()
+                ->all(),
+            'schedule' => $this->compliance->normalizeSchedule($validated['schedule']),
+            'notes' => $validated['notes'] ?? null,
+            'legal_reference_url' => $validated['legal_reference_url'] ?? null,
+            'is_active' => (bool) ($validated['is_active'] ?? true),
+        ]);
+
+        return response()->json(['messages' => ['success' => [__('Compliance profile saved successfully.')]]]);
+    }
+
+    public function updateComplianceProfile(Request $request, DialerComplianceProfile $profile): JsonResponse
+    {
+        if (! userCheckPermission('dialer_manage')) {
+            return response()->json(['messages' => ['error' => [__('Forbidden.')]]], 403);
+        }
+
+        abort_unless($profile->domain_uuid === session('domain_uuid') && ! $profile->is_system, 404);
+
+        $validated = $this->validateComplianceProfile($request);
+
+        $profile->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'timezone' => $validated['timezone'] ?? null,
+            'state_codes' => collect($validated['state_codes'] ?? [])
+                ->filter()
+                ->map(fn($code) => strtoupper((string) $code))
+                ->values()
+                ->all(),
+            'schedule' => $this->compliance->normalizeSchedule($validated['schedule']),
+            'notes' => $validated['notes'] ?? null,
+            'legal_reference_url' => $validated['legal_reference_url'] ?? null,
+            'is_active' => (bool) ($validated['is_active'] ?? true),
+        ]);
+
+        return response()->json(['messages' => ['success' => [__('Compliance profile updated successfully.')]]]);
+    }
+
+    public function destroyComplianceProfile(DialerComplianceProfile $profile): JsonResponse
+    {
+        if (! userCheckPermission('dialer_manage')) {
+            return response()->json(['messages' => ['error' => [__('Forbidden.')]]], 403);
+        }
+
+        abort_unless($profile->domain_uuid === session('domain_uuid') && ! $profile->is_system, 404);
+
+        DialerCampaign::query()
+            ->where('dialer_compliance_profile_uuid', $profile->uuid)
+            ->update(['dialer_compliance_profile_uuid' => null]);
+
+        $profile->delete();
+
+        return response()->json(['messages' => ['success' => [__('Compliance profile deleted successfully.')]]]);
+    }
+
     public function updateStateRule(Request $request, DialerStateRule $stateRule): JsonResponse
     {
         if (! userCheckPermission('dialer_manage')) {
@@ -634,6 +760,7 @@ class DialerController extends Controller
             'default_state_code' => ['nullable', 'string', 'size:2'],
             'default_timezone' => ['nullable', 'string', 'max:100'],
             'call_center_queue_uuid' => ['nullable', 'uuid', 'required_if:mode,progressive,power'],
+            'dialer_compliance_profile_uuid' => ['nullable', 'uuid'],
             'pacing_ratio' => ['nullable', 'numeric', 'min:1', 'max:10'],
             'preview_seconds' => ['nullable', 'integer', 'min:5', 'max:3600'],
             'originate_timeout' => ['nullable', 'integer', 'min:5', 'max:120'],
@@ -656,6 +783,42 @@ class DialerController extends Controller
         $validated['amd_enabled'] = (bool) ($validated['amd_enabled'] ?? false);
 
         return $validated;
+    }
+
+    protected function validateComplianceProfile(Request $request): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'timezone' => ['nullable', 'string', 'max:100'],
+            'state_codes' => ['nullable', 'array'],
+            'state_codes.*' => ['string', 'size:2'],
+            'schedule' => ['required', 'array'],
+            'schedule.monday.enabled' => ['required', 'boolean'],
+            'schedule.monday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.monday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.tuesday.enabled' => ['required', 'boolean'],
+            'schedule.tuesday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.tuesday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.wednesday.enabled' => ['required', 'boolean'],
+            'schedule.wednesday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.wednesday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.thursday.enabled' => ['required', 'boolean'],
+            'schedule.thursday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.thursday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.friday.enabled' => ['required', 'boolean'],
+            'schedule.friday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.friday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.saturday.enabled' => ['required', 'boolean'],
+            'schedule.saturday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.saturday.end' => ['nullable', 'date_format:H:i'],
+            'schedule.sunday.enabled' => ['required', 'boolean'],
+            'schedule.sunday.start' => ['nullable', 'date_format:H:i'],
+            'schedule.sunday.end' => ['nullable', 'date_format:H:i'],
+            'notes' => ['nullable', 'string'],
+            'legal_reference_url' => ['nullable', 'url', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
     }
 
     protected function validateStateRule(Request $request): array

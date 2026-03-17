@@ -17,6 +17,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/dialer/dnc/{entry}', [DialerController::class, 'destroyDncEntry'])->name('dialer.dnc.destroy');
     Route::post('/dialer/state-rules', [DialerController::class, 'storeStateRule'])->name('dialer.state-rules.store');
     Route::put('/dialer/state-rules/{stateRule}', [DialerController::class, 'updateStateRule'])->name('dialer.state-rules.update');
+    Route::post('/dialer/compliance-profiles', [DialerController::class, 'storeComplianceProfile'])->name('dialer.compliance-profiles.store');
+    Route::put('/dialer/compliance-profiles/{profile}', [DialerController::class, 'updateComplianceProfile'])->name('dialer.compliance-profiles.update');
+    Route::delete('/dialer/compliance-profiles/{profile}', [DialerController::class, 'destroyComplianceProfile'])->name('dialer.compliance-profiles.destroy');
     Route::post('/dialer/imports', [DialerController::class, 'importLeads'])->name('dialer.imports.store');
 
     Route::get('/dialer/campaigns/{campaign}/preview', [DialerController::class, 'previewNextLead'])->name('dialer.campaigns.preview');

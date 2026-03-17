@@ -49,8 +49,16 @@ class CallCenterService
             ->get()
             ->keyBy('call_center_agent_uuid');
 
-        $queueRows = $queues->map(function (CallCenterQueues $queue) use ($domainName) {
+        $queueRows = $queues->map(function (CallCenterQueues $queue) use ($domainName, $registeredExtensions, $busyExtensions) {
             $wallboard = $this->queueWallboardRow($queue, $domainName);
+            $agentExtensions = $queue->agents->pluck('agent_id')->filter();
+            $availableAgents = $agentExtensions
+                ->filter(fn($extension) => $registeredExtensions->contains((string) $extension) && ! $busyExtensions->contains((string) $extension))
+                ->count();
+            $busyAgents = $agentExtensions
+                ->filter(fn($extension) => $busyExtensions->contains((string) $extension))
+                ->count();
+            $offlineAgents = max($agentExtensions->count() - $availableAgents - $busyAgents, 0);
 
             return [
                 'uuid' => $queue->call_center_queue_uuid,
@@ -65,17 +73,30 @@ class CallCenterService
                     'extension' => $agent->agent_id,
                 ])->values(),
                 'live_waiting_members' => $wallboard['live_waiting_members'],
+                'live_agent_slots' => $wallboard['live_agent_slots'],
+                'available_agents' => $availableAgents,
+                'busy_agents' => $busyAgents,
+                'offline_agents' => $offlineAgents,
+                'coverage_gap' => max($wallboard['live_waiting_members'] - $availableAgents, 0),
                 'service_level_percent' => $wallboard['service_level_percent'],
                 'abandonment_rate' => $wallboard['abandonment_rate'],
                 'avg_wait_seconds' => $wallboard['avg_wait_seconds'],
+                'answered_count' => $wallboard['answered_count'],
+                'abandoned_count' => $wallboard['abandoned_count'],
+                'alert_level' => $wallboard['live_waiting_members'] > $availableAgents ? 'critical' : ($wallboard['abandonment_rate'] >= 10 ? 'warning' : 'healthy'),
             ];
         })->values();
 
-        $agentRows = $agents->map(function (CallCenterAgents $agent) use ($registeredExtensions, $busyExtensions, $openPauses) {
+        $agentRows = $agents->map(function (CallCenterAgents $agent) use ($registeredExtensions, $busyExtensions, $openPauses, $channels) {
             $extension = (string) $agent->agent_id;
             $isBusy = $busyExtensions->contains($extension);
             $isOnline = $registeredExtensions->contains($extension);
             $pause = $openPauses->get($agent->call_center_agent_uuid);
+            $activeCall = $channels->first(function (array $channel) use ($extension) {
+                return ($channel['cid_num'] ?? null) === $extension
+                    || ($channel['callee_num'] ?? null) === $extension
+                    || ($channel['initial_cid_num'] ?? null) === $extension;
+            });
 
             return [
                 'uuid' => $agent->call_center_agent_uuid,
@@ -85,9 +106,13 @@ class CallCenterService
                 'live_status' => $isBusy ? 'Busy' : ($isOnline ? 'Online' : 'Offline'),
                 'pause_reason' => $pause?->reason?->name,
                 'paused_at' => $pause?->started_at,
+                'is_paused' => (bool) $pause,
                 'call_timeout' => (int) ($agent->agent_call_timeout ?? 20),
                 'wrap_up_time' => (int) ($agent->agent_wrap_up_time ?? 10),
                 'reject_delay_time' => (int) ($agent->agent_reject_delay_time ?? 10),
+                'active_call_destination' => $activeCall['dest'] ?? $activeCall['callee_num'] ?? null,
+                'active_call_state' => $activeCall['callstate'] ?? $activeCall['state'] ?? null,
+                'queue_count' => $agent->queues->count(),
                 'queues' => $agent->queues->map(fn(CallCenterQueues $queue) => [
                     'uuid' => $queue->call_center_queue_uuid,
                     'name' => $queue->queue_name,
@@ -98,6 +123,20 @@ class CallCenterService
 
         $wallboard = $this->getWallboardData($domainUuid, $domainName, $queues, $agents, $channels);
         $callbacks = $this->getCallbacks($domainUuid);
+        $answeredToday = $queueRows->sum('answered_count');
+        $abandonedToday = $queueRows->sum('abandoned_count');
+        $onlineAgents = $agentRows->where('live_status', 'Online')->count();
+        $busyAgents = $agentRows->where('live_status', 'Busy')->count();
+        $callbacksDueNow = $callbacks
+            ->filter(fn(array $callback) => in_array($callback['status'], ['pending', 'assigned'], true))
+            ->filter(fn(array $callback) => ! empty($callback['preferred_callback_at']) && CarbonImmutable::parse($callback['preferred_callback_at'])->lessThanOrEqualTo(now()))
+            ->count();
+        $longestActiveCallSeconds = collect($wallboard['active_calls'] ?? [])->max('duration_seconds') ?: 0;
+        $occupancyPercent = ($onlineAgents + $busyAgents) > 0
+            ? round($busyAgents / max($onlineAgents + $busyAgents, 1) * 100, 1)
+            : 0;
+        $alerts = $this->buildOperationalAlerts($queueRows, $callbacks, $agentRows, collect($wallboard['active_calls'] ?? []));
+        $pauseBreakdown = $this->pauseBreakdown($openPauses);
 
         return [
             'summary' => [
@@ -108,12 +147,24 @@ class CallCenterService
                 'offline_agents' => $agentRows->where('live_status', 'Offline')->count(),
                 'paused_agents' => $openPauses->count(),
                 'pending_callbacks' => $callbacks->where('status', 'pending')->count(),
+                'assigned_callbacks' => $callbacks->where('status', 'assigned')->count(),
+                'callbacks_due_now' => $callbacksDueNow,
+                'service_level_percent' => $wallboard['summary']['service_level_percent'],
+                'abandonment_rate' => $wallboard['summary']['abandonment_rate'],
+                'avg_wait_seconds' => $wallboard['summary']['avg_wait_seconds'],
+                'waiting_members' => $wallboard['summary']['waiting_members'],
+                'answered_today' => $answeredToday,
+                'abandoned_today' => $abandonedToday,
+                'occupancy_percent' => $occupancyPercent,
+                'longest_active_call_seconds' => $longestActiveCallSeconds,
             ],
             'queues' => $queueRows,
             'agents' => $agentRows,
             'wallboard' => $wallboard,
             'callbacks' => $callbacks,
             'pause_reasons' => $this->getPauseReasons($domainUuid),
+            'alerts' => $alerts,
+            'pause_breakdown' => $pauseBreakdown,
             'options' => [
                 'agents' => $this->getAgentOptions($domainUuid),
                 'extensions' => $this->getExtensionOptions($domainUuid),
@@ -524,6 +575,12 @@ class CallCenterService
         $abandoned = $queueRows->sum('abandoned_count');
         $activeCalls = $this->getActiveCalls($domainUuid, $channels, $agents);
         $callbacks = $this->getCallbacks($domainUuid);
+        $busyAgents = $activeCalls->pluck('agent_extension')->filter()->unique()->count();
+        $registeredAgents = $agents
+            ->pluck('agent_id')
+            ->filter()
+            ->unique()
+            ->count();
 
         return [
             'summary' => [
@@ -531,6 +588,7 @@ class CallCenterService
                 'waiting_members' => $queueRows->sum('live_waiting_members'),
                 'available_agents' => $agents->where('agent_status', 'Available')->count(),
                 'callbacks_pending' => $callbacks->where('status', 'pending')->count(),
+                'callbacks_assigned' => $callbacks->where('status', 'assigned')->count(),
                 'service_level_percent' => $answered > 0
                     ? round($queueRows->sum('sla_hits') / max($answered, 1) * 100, 1)
                     : 0,
@@ -538,6 +596,10 @@ class CallCenterService
                     ? round($abandoned / ($answered + $abandoned) * 100, 1)
                     : 0,
                 'avg_wait_seconds' => round($queueRows->avg('avg_wait_seconds') ?: 0, 1),
+                'answered_today' => $answered,
+                'abandoned_today' => $abandoned,
+                'occupancy_percent' => $registeredAgents > 0 ? round($busyAgents / max($registeredAgents, 1) * 100, 1) : 0,
+                'longest_active_call_seconds' => $activeCalls->max('duration_seconds') ?: 0,
             ],
             'queues' => $queueRows,
             'active_calls' => $activeCalls->values(),
@@ -705,6 +767,58 @@ class CallCenterService
                 : 0,
             'avg_wait_seconds' => round((float) ($todayEvents->avg('wait_seconds') ?: 0), 1),
         ];
+    }
+
+    protected function buildOperationalAlerts(Collection $queueRows, Collection $callbacks, Collection $agentRows, Collection $activeCalls): Collection
+    {
+        $alerts = collect();
+
+        foreach ($queueRows as $queue) {
+            if (($queue['coverage_gap'] ?? 0) > 0) {
+                $alerts->push([
+                    'severity' => 'critical',
+                    'title' => 'Queue coverage risk',
+                    'description' => "{$queue['extension']} - {$queue['name']} has more waiting members than available agents.",
+                ]);
+            }
+
+            if (($queue['abandonment_rate'] ?? 0) >= 10) {
+                $alerts->push([
+                    'severity' => 'warning',
+                    'title' => 'Abandonment above threshold',
+                    'description' => "{$queue['extension']} - {$queue['name']} is running with {$queue['abandonment_rate']}% abandonment today.",
+                ]);
+            }
+        }
+
+        if ($callbacks->where('status', 'pending')->count() >= 5) {
+            $alerts->push([
+                'severity' => 'warning',
+                'title' => 'Callback backlog building',
+                'description' => 'Pending callbacks are accumulating and should be assigned or completed.',
+            ]);
+        }
+
+        if ($agentRows->where('live_status', 'Online')->count() === 0 && $activeCalls->count() > 0) {
+            $alerts->push([
+                'severity' => 'critical',
+                'title' => 'Active calls without online pool',
+                'description' => 'There are active calls but no agents marked as online in the supervision view.',
+            ]);
+        }
+
+        return $alerts->values();
+    }
+
+    protected function pauseBreakdown(Collection $openPauses): Collection
+    {
+        return $openPauses
+            ->groupBy(fn(CallCenterAgentPause $pause) => $pause->reason?->name ?: 'Uncategorized')
+            ->map(fn(Collection $pauses, string $reason) => [
+                'reason' => $reason,
+                'count' => $pauses->count(),
+            ])
+            ->values();
     }
 
     protected function callCenterCount(string $command): int

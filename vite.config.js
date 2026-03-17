@@ -202,8 +202,9 @@ async function getConfig() {
         resolve: {
             alias: {
                 '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
-                '@modules': path.resolve(__dirname + '/modules'),
+                '@modules': path.resolve(__dirname, 'Modules'),
                 '@layouts': path.resolve(__dirname, 'resources/js/Layouts'),
+                '@pages': path.resolve(__dirname, 'resources/js/Pages'),
                 '@composables': path.resolve(__dirname, 'resources/js/composables'),
                 '@icons': path.resolve(__dirname, 'resources/js/Pages/components/icons'),
                 '@generalComponents': path.resolve(__dirname, 'resources/js/Pages/components/general'),
