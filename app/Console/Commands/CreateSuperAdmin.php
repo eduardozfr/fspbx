@@ -112,7 +112,7 @@ class CreateSuperAdmin extends Command
                 'user_setting_category'    => 'domain',
                 'user_setting_subcategory' => 'language',
                 'user_setting_name'        => 'code',
-                'user_setting_value'       => 'en-us',
+                'user_setting_value'       => 'pt-br',
                 'user_setting_enabled'     => true,
             ],
             [
@@ -122,7 +122,7 @@ class CreateSuperAdmin extends Command
                 'user_setting_category'    => 'domain',
                 'user_setting_subcategory' => 'time_zone',
                 'user_setting_name'        => 'name',
-                'user_setting_value'       => 'America/Los_Angeles',
+                'user_setting_value'       => 'America/Sao_Paulo',
                 'user_setting_enabled'     => true,
             ],
         ];
@@ -138,6 +138,6 @@ class CreateSuperAdmin extends Command
             );
         }
 
-        $this->info("✅ User settings initialized (Language: en-us, Time Zone: America/Los_Angeles).");
+        $this->info("✅ User settings initialized (Language: pt-br, Time Zone: America/Sao_Paulo).");
     }
 }

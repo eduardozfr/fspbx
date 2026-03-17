@@ -130,9 +130,9 @@ class GreetingsController extends Controller
             $variables = SwitchVariable::whereIn('var_name', ['default_language', 'default_dialect', 'default_voice'])
                 ->pluck('var_value', 'var_name');
 
-            $defaultLanguage = $variables['default_language'] ?? 'en'; // Fallback to 'en' if not found
-            $defaultDialect = $variables['default_dialect'] ?? 'us';  // Fallback to 'us' if not found
-            $defaultVoice = $variables['default_voice'] ?? 'callie';  // Fallback to 'callie' if not found
+            $defaultLanguage = $variables['default_language'] ?? 'pt'; // Fallback to PT-BR if not found
+            $defaultDialect = $variables['default_dialect'] ?? 'br';  // Fallback to PT-BR if not found
+            $defaultVoice = $variables['default_voice'] ?? 'karina';  // Fallback to PT-BR if not found
 
             // Alternative path in the 'sounds' disk
             $alternativePath = $defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice  . "/" . str_replace('/', "/16000/", $file_name);

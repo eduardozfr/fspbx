@@ -1,10 +1,35 @@
 <template>
-    <div class="grid gap-6 xl:grid-cols-[1fr,0.95fr]">
+    <div class="space-y-6">
+        <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-slate-500">{{ t('Available agents') }}</div>
+                    <div class="mt-3 text-3xl font-semibold text-slate-900">{{ summary.available }}</div>
+                </article>
+                <article class="rounded-3xl bg-amber-50 p-4 ring-1 ring-amber-100">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-amber-700">{{ t('Paused') }}</div>
+                    <div class="mt-3 text-3xl font-semibold text-amber-700">{{ summary.paused }}</div>
+                </article>
+                <article class="rounded-3xl bg-cyan-50 p-4 ring-1 ring-cyan-100">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-cyan-700">{{ t('Talking') }}</div>
+                    <div class="mt-3 text-3xl font-semibold text-cyan-700">{{ summary.talking }}</div>
+                </article>
+                <article class="rounded-3xl bg-rose-50 p-4 ring-1 ring-rose-100">
+                    <div class="text-[11px] uppercase tracking-[0.2em] text-rose-700">{{ t('Pending callbacks') }}</div>
+                    <div class="mt-3 text-3xl font-semibold text-rose-700">{{ summary.pendingCallbacks }}</div>
+                </article>
+            </div>
+        </section>
+
+        <div class="grid gap-6 xl:grid-cols-[1fr,0.95fr]">
         <section class="space-y-6">
             <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <h2 class="text-xl font-semibold text-slate-900">{{ t('Agent supervision') }}</h2>
+                        <h2 class="flex items-center gap-2 text-xl font-semibold text-slate-900">
+                            <span>{{ t('Agent supervision') }}</span>
+                            <HelpTooltip :text="t('Pause, resume, and review the live posture of every agent in the operation.')"/>
+                        </h2>
                         <p class="mt-1 text-sm text-slate-500">{{ t('Pause, resume, and review the live posture of every agent in the operation.') }}</p>
                     </div>
                 </div>
@@ -36,7 +61,10 @@
             </section>
 
             <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                <h2 class="text-xl font-semibold text-slate-900">{{ t('Callback board') }}</h2>
+                <h2 class="flex items-center gap-2 text-xl font-semibold text-slate-900">
+                    <span>{{ t('Callback board') }}</span>
+                    <HelpTooltip :text="t('Track callback ownership, due dates, and resolution status without leaving the wallboard flow.')"/>
+                </h2>
                 <div class="mt-5 space-y-3">
                     <article v-for="callback in callbacks" :key="callback.uuid" class="rounded-3xl border border-slate-200 p-4">
                         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -66,7 +94,10 @@
 
         <section class="space-y-6">
             <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                <h2 class="text-xl font-semibold text-slate-900">{{ t('Live monitoring') }}</h2>
+                <h2 class="flex items-center gap-2 text-xl font-semibold text-slate-900">
+                    <span>{{ t('Live monitoring') }}</span>
+                    <HelpTooltip :text="t('Start listen, whisper, or barge sessions from the supervisor console once the active call and supervisor extension are selected.')"/>
+                </h2>
                 <form class="mt-5 space-y-3" @submit.prevent="startMonitoring">
                     <select v-model="monitorForm.call_uuid" class="w-full rounded-2xl border-slate-300 shadow-sm">
                         <option value="">{{ t('Select active call') }}</option>
@@ -98,11 +129,13 @@
                 </div>
             </section>
         </section>
+        </div>
     </div>
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
+import HelpTooltip from '@generalComponents/HelpTooltip.vue'
 import { useLocale } from '@composables/useLocale'
 
 const props = defineProps({
@@ -121,6 +154,12 @@ const pauseNoteForms = reactive(Object.fromEntries(props.agents.map((agent) => [
 const callbackStatusForms = reactive(Object.fromEntries(props.callbacks.map((callback) => [callback.uuid, callback.status])))
 const callbackAgentForms = reactive(Object.fromEntries(props.callbacks.map((callback) => [callback.uuid, callback.call_center_agent_uuid || ''])))
 const monitorForm = reactive({ call_uuid: '', call_center_agent_uuid: '', supervisor_extension_uuid: '', mode: 'listen', notes: '' })
+const summary = computed(() => ({
+    available: props.agents.filter((agent) => ['available', 'waiting'].includes((agent.live_status || '').toLowerCase())).length,
+    paused: props.agents.filter((agent) => ['paused', 'on_break'].includes((agent.live_status || '').toLowerCase())).length,
+    talking: props.agents.filter((agent) => ['talking', 'in_a_queue_call', 'receiving', 'calling'].includes((agent.live_status || '').toLowerCase())).length,
+    pendingCallbacks: props.callbacks.filter((callback) => ['pending', 'assigned'].includes((callback.status || '').toLowerCase())).length,
+}))
 
 const setMessage = (type, text) => { message.type = type; message.text = text }
 const routeFor = (template, token, value) => (template || '').replace(token, value)

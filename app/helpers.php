@@ -1237,16 +1237,17 @@ if (!function_exists('getSoundsCollection')) {
         $variables = SwitchVariable::whereIn('var_name', ['default_language', 'default_dialect', 'default_voice'])
             ->pluck('var_value', 'var_name');
         // Extract values
-        $defaultLanguage = $variables['default_language'] ?? 'en'; // Fallback to 'en' if not found
-        $defaultDialect = $variables['default_dialect'] ?? 'us';  // Fallback to 'us' if not found
-        $defaultVoice = $variables['default_voice'] ?? 'callie';  // Fallback to 'callie' if not found
+        $defaultLanguage = $variables['default_language'] ?? 'pt'; // Fallback to PT-BR if not found
+        $defaultDialect = $variables['default_dialect'] ?? 'br';  // Fallback to PT-BR if not found
+        $defaultVoice = $variables['default_voice'] ?? 'karina';  // Fallback to PT-BR if not found
 
         $sounds = Storage::disk('sounds')->allFiles($defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice);
+        $soundPrefixPattern = preg_quote($defaultLanguage . "/" . $defaultDialect . "/" . $defaultVoice . "/", '#');
 
         $sounds = collect($sounds)
-            ->map(function ($file) {
-                // Remove the "en/us/callie" prefix and subdirectories with numbers or specific names like 'flac'
-                $cleanedFile = preg_replace('#^en/us/callie/#', '', $file); // Remove "en/us/callie"
+            ->map(function ($file) use ($soundPrefixPattern) {
+                // Remove the language/voice prefix and sample-rate folders.
+                $cleanedFile = preg_replace('#^' . $soundPrefixPattern . '#', '', $file);
                 $cleanedFile = preg_replace('#/(\d+|flac)/#', '/', $cleanedFile);
                 return [
                     'name' => $cleanedFile,

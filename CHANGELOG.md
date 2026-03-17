@@ -16,7 +16,11 @@
 - Expanded the call center with wallboard metrics, callback tracking, pause reasons, agent pause/resume flows, monitoring session orchestration, queue event storage, and API endpoints for queues, agents, and wallboard data.
 - Redesigned the `Dialer` workspace into clearer operational areas for live dialing, campaign building, contact intake, UF compliance, and disposition management, with a more polished visual style.
 - Refined the `Call Center` landing experience with a stronger operational hero, clearer quick navigation, and more natural PT-BR terminology for wallboard and callback workflows.
-- Normalized several PT-BR terms that were confusing in production, including `Wakeup Calls` -> `Despertador`, `Callbacks` -> `Retornos`, and `Call Center` -> `Central de Atendimento`.
+- Kept the module naming aligned with operation language by preserving `Call Center` in PT-BR instead of translating it to `Central de Atendimento`, while still normalizing other production-facing labels such as `Wakeup Calls` -> `Despertador` and `Callbacks` -> `Retornos`.
+- Reworked the `Dialer` again into clearer launch, workspace, compliance, and campaign-design lanes inspired by professional outbound suites, including stronger launch checklists, better routing sections, and more explicit pacing/compliance guidance.
+- Reworked the `Call Center` again around floor-control concepts used by wallboard-oriented platforms, adding clearer floor-navigation cards, live conversation surfacing, and stronger supervision metrics.
+- Changed the installer to fetch and install the PT-BR `karina` FreeSWITCH prompt set by default, while rewriting FreeSWITCH sound defaults to `pt/br/karina` during provisioning and initial seeding.
+- Changed Brazilian installation defaults to `pt-br` and `America/Sao_Paulo` for the initial superadmin, new-user defaults, scheduled-job timezone defaults, and FreeSWITCH sound fallbacks used by greetings and prompt selection.
 - Added FreeSWITCH webhook synchronization for dialer attempt updates and call center queue events.
 - Added unit coverage for state-based dialer compliance scheduling.
 - Updated repository and installation references to `eduardozfr/fspbx`.

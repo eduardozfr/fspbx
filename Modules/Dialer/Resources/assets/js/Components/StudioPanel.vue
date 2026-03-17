@@ -14,74 +14,158 @@
             </div>
 
             <form class="mt-6 space-y-6" @submit.prevent="submitCampaign">
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div class="space-y-2 md:col-span-2">
-                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>{{ t('Campaign name') }}</span>
-                            <HelpTooltip :text="t('Use an operational name that already tells supervisors what the list is and who owns it.')"/>
-                        </label>
-                        <input v-model="campaignForm.name" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Example: Retention | Fiber | SP capital | Mar 2026')" />
+                <section class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900">{{ t('Identity and ownership') }}</h3>
+                            <p class="mt-1 text-sm text-slate-500">{{ t('Start with the operational identity so supervisors know what this campaign does and when it should be active.') }}</p>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>{{ t('Campaign status') }}</span>
-                            <HelpTooltip :text="t('Draft keeps the campaign editable, active allows dialing, paused freezes execution, and completed closes the operation.')"/>
-                        </label>
-                        <select v-model="campaignForm.status" class="w-full rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950">
-                            <option v-for="status in options.statuses || []" :key="status.value" :value="status.value">{{ t(status.label) }}</option>
-                        </select>
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <span>{{ t('Campaign name') }}</span>
+                                <HelpTooltip :text="t('Use an operational name that already tells supervisors what the list is and who owns it.')"/>
+                            </label>
+                            <input v-model="campaignForm.name" type="text" class="w-full rounded-2xl border-slate-300 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Example: Retention | Fiber | SP capital | Mar 2026')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <span>{{ t('Campaign status') }}</span>
+                                <HelpTooltip :text="t('Draft keeps the campaign editable, active allows dialing, paused freezes execution, and completed closes the operation.')"/>
+                            </label>
+                            <select v-model="campaignForm.status" class="w-full rounded-2xl border-slate-300 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950">
+                                <option v-for="status in options.statuses || []" :key="status.value" :value="status.value">{{ t(status.label) }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <span>{{ t('Dialing mode') }}</span>
+                                <HelpTooltip :text="t('Manual and preview are agent-assisted. Progressive and power require a staffed queue for answered calls.')"/>
+                            </label>
+                            <select v-model="campaignForm.mode" class="w-full rounded-2xl border-slate-300 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950">
+                                <option v-for="mode in options.modes || []" :key="mode.value" :value="mode.value">{{ t(mode.label) }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Description') }}</label>
+                            <textarea v-model="campaignForm.description" rows="3" class="w-full rounded-2xl border-slate-300 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Add campaign scope, owner, list source, or launch notes for the floor team.')" />
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>{{ t('Dialing mode') }}</span>
-                            <HelpTooltip :text="t('Manual and preview are agent-assisted. Progressive and power require a staffed queue for answered calls.')"/>
-                        </label>
-                        <select v-model="campaignForm.mode" class="w-full rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950">
-                            <option v-for="mode in options.modes || []" :key="mode.value" :value="mode.value">{{ t(mode.label) }}</option>
-                        </select>
+                </section>
+
+                <section class="rounded-[1.75rem] border border-slate-200 bg-white p-5">
+                    <h3 class="text-lg font-semibold text-slate-900">{{ t('Routing and caller presentation') }}</h3>
+                    <p class="mt-1 text-sm text-slate-500">{{ t('Define how the dialer presents the call and where answered conversations should land.') }}</p>
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <span>{{ t('Queue handoff') }}</span>
+                                <HelpTooltip :text="t('Choose the call center queue that receives answered calls from progressive or power campaigns.')"/>
+                            </label>
+                            <select v-model="campaignForm.call_center_queue_uuid" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950">
+                                <option value="">{{ t('No queue handoff configured') }}</option>
+                                <option v-for="queue in options.queues || []" :key="queue.value" :value="queue.value">{{ queue.label }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Outbound prefix') }}</label>
+                            <input v-model="campaignForm.outbound_prefix" type="text" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Optional route prefix for carrier selection')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Caller ID name') }}</label>
+                            <input v-model="campaignForm.caller_id_name" type="text" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Caller ID name')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Caller ID number') }}</label>
+                            <input v-model="campaignForm.caller_id_number" type="text" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Caller ID number')" />
+                        </div>
                     </div>
-                    <input v-model="campaignForm.caller_id_name" type="text" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Caller ID name')" />
-                    <input v-model="campaignForm.caller_id_number" type="text" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Caller ID number')" />
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>{{ t('Queue handoff') }}</span>
-                            <HelpTooltip :text="t('Choose the call center queue that receives answered calls from progressive or power campaigns.')"/>
-                        </label>
-                        <select v-model="campaignForm.call_center_queue_uuid" class="w-full rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950">
-                            <option value="">{{ t('No queue handoff configured') }}</option>
-                            <option v-for="queue in options.queues || []" :key="queue.value" :value="queue.value">{{ queue.label }}</option>
-                        </select>
+                </section>
+
+                <section class="rounded-[1.75rem] border border-slate-200 bg-white p-5">
+                    <h3 class="text-lg font-semibold text-slate-900">{{ t('Compliance and pacing') }}</h3>
+                    <p class="mt-1 text-sm text-slate-500">{{ t('Set the legal baseline, retry policy, preview time, and pacing guardrails before scaling the campaign.') }}</p>
+                    <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <span>{{ t('Compliance profile') }}</span>
+                                <HelpTooltip :text="t('Apply a named governance profile when the operation needs a schedule different from the default UF baseline.')"/>
+                            </label>
+                            <select v-model="campaignForm.dialer_compliance_profile_uuid" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950">
+                                <option value="">{{ t('National baseline') }}</option>
+                                <option v-for="profile in complianceProfiles" :key="profile.uuid" :value="profile.uuid">{{ profile.name }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Default state') }}</label>
+                            <select v-model="campaignForm.default_state_code" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" @change="syncCampaignTimezone">
+                                <option value="">{{ t('No state') }}</option>
+                                <option v-for="state in options.states || []" :key="state.value" :value="state.value">{{ state.label }}</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Default timezone') }}</label>
+                            <input v-model="campaignForm.default_timezone" type="text" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Default timezone')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Maximum attempts') }}</label>
+                            <input v-model.number="campaignForm.max_attempts" type="number" min="1" max="25" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Maximum attempts')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Daily retry limit') }}</label>
+                            <input v-model.number="campaignForm.daily_retry_limit" type="number" min="1" max="25" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Daily retry limit')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Retry backoff (minutes)') }}</label>
+                            <input v-model.number="campaignForm.retry_backoff_minutes" type="number" min="1" max="43200" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Retry backoff (minutes)')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Preview seconds') }}</label>
+                            <input v-model.number="campaignForm.preview_seconds" type="number" min="5" max="3600" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Preview seconds')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Originate timeout') }}</label>
+                            <input v-model.number="campaignForm.originate_timeout" type="number" min="5" max="120" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Originate timeout')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Pacing ratio') }}</label>
+                            <input v-model.number="campaignForm.pacing_ratio" type="number" min="1" max="10" step="0.1" class="w-full rounded-2xl border-slate-300 bg-slate-50 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Pacing ratio')" />
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <span>{{ t('Compliance profile') }}</span>
-                            <HelpTooltip :text="t('Apply a named governance profile when the operation needs a schedule different from the default UF baseline.')"/>
-                        </label>
-                        <select v-model="campaignForm.dialer_compliance_profile_uuid" class="w-full rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950">
-                            <option value="">{{ t('National baseline') }}</option>
-                            <option v-for="profile in complianceProfiles" :key="profile.uuid" :value="profile.uuid">{{ profile.name }}</option>
-                        </select>
+                    <div class="mt-4 grid gap-3 md:grid-cols-2">
+                        <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="campaignForm.respect_dnc" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Respect do-not-call list') }}</span></label>
+                        <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="campaignForm.amd_enabled" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Enable AMD / voicemail detection') }}</span></label>
                     </div>
-                    <select v-model="campaignForm.default_state_code" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" @change="syncCampaignTimezone">
-                        <option value="">{{ t('No state') }}</option>
-                        <option v-for="state in options.states || []" :key="state.value" :value="state.value">{{ state.label }}</option>
-                    </select>
-                    <input v-model="campaignForm.default_timezone" type="text" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Default timezone')" />
-                    <input v-model.number="campaignForm.max_attempts" type="number" min="1" max="25" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Maximum attempts')" />
-                    <input v-model.number="campaignForm.daily_retry_limit" type="number" min="1" max="25" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Daily retry limit')" />
-                    <input v-model.number="campaignForm.retry_backoff_minutes" type="number" min="1" max="43200" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Retry backoff (minutes)')" />
-                    <input v-model.number="campaignForm.preview_seconds" type="number" min="5" max="3600" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Preview seconds')" />
-                    <input v-model.number="campaignForm.originate_timeout" type="number" min="5" max="120" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Originate timeout')" />
-                    <input v-model.number="campaignForm.pacing_ratio" type="number" min="1" max="10" step="0.1" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Pacing ratio')" />
-                    <input v-model="campaignForm.webhook_url" type="url" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950 md:col-span-2" :placeholder="t('Webhook URL')" />
-                    <input v-model="campaignForm.webhook_secret" type="text" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Webhook secret')" />
-                    <input v-model="campaignForm.amd_strategy" type="text" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('AMD strategy')" />
-                    <textarea v-model="campaignForm.description" rows="3" class="rounded-2xl border-slate-300 shadow-sm focus:border-slate-950 focus:ring-slate-950 md:col-span-2" :placeholder="t('Description')" />
-                </div>
-                <div class="grid gap-3 md:grid-cols-2">
-                    <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="campaignForm.respect_dnc" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Respect do-not-call list') }}</span></label>
-                    <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="campaignForm.amd_enabled" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Enable AMD / voicemail detection') }}</span></label>
-                </div>
+                </section>
+
+                <section class="rounded-[1.75rem] border border-slate-200 bg-[#fffaf0] p-5">
+                    <h3 class="text-lg font-semibold text-slate-900">{{ t('Automation and outcomes') }}</h3>
+                    <p class="mt-1 text-sm text-slate-600">{{ t('Tie AMD, webhook automation, and final outcome codes together so downstream systems receive a clean result.') }}</p>
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('AMD strategy') }}</label>
+                            <input v-model="campaignForm.amd_strategy" type="text" class="w-full rounded-2xl border-amber-200 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('AMD strategy')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Webhook secret') }}</label>
+                            <input v-model="campaignForm.webhook_secret" type="text" class="w-full rounded-2xl border-amber-200 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Webhook secret')" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Webhook URL') }}</label>
+                            <input v-model="campaignForm.webhook_url" type="url" class="w-full rounded-2xl border-amber-200 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Webhook URL')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Callback disposition code') }}</label>
+                            <input v-model="campaignForm.callback_disposition_code" type="text" class="w-full rounded-2xl border-amber-200 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Callback disposition code')" />
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700">{{ t('Voicemail disposition code') }}</label>
+                            <input v-model="campaignForm.voicemail_disposition_code" type="text" class="w-full rounded-2xl border-amber-200 bg-white shadow-sm focus:border-slate-950 focus:ring-slate-950" :placeholder="t('Voicemail disposition code')" />
+                        </div>
+                    </div>
+                </section>
+
                 <button type="submit" class="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">{{ editingCampaignUuid ? t('Update campaign') : t('Create campaign') }}</button>
             </form>
         </section>
@@ -112,6 +196,15 @@
                     <div class="rounded-3xl bg-white p-4 ring-1 ring-amber-100">{{ t('Preview: best for premium or high-value leads because the agent sees the record first.') }}</div>
                     <div class="rounded-3xl bg-white p-4 ring-1 ring-amber-100">{{ t('Progressive: safest automated option when a staffed queue receives answered calls.') }}</div>
                     <div class="rounded-3xl bg-white p-4 ring-1 ring-amber-100">{{ t('Power: activate only after monitoring answer rate, abandonment, and occupancy closely.') }}</div>
+                </div>
+            </section>
+
+            <section class="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900">{{ t('Launch checklist') }}</h2>
+                <div class="mt-4 space-y-3 text-sm text-slate-600">
+                    <div class="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">{{ t('Confirm queue staffing before activating progressive or power pacing.') }}</div>
+                    <div class="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">{{ t('Keep retry limits and callback codes explicit before importing the list.') }}</div>
+                    <div class="rounded-3xl bg-slate-50 p-4 ring-1 ring-slate-200">{{ t('Attach a compliance profile whenever the operation follows a rule set beyond the standard UF baseline.') }}</div>
                 </div>
             </section>
         </section>

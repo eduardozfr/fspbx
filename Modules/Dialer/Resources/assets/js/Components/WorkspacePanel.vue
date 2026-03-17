@@ -1,10 +1,10 @@
 <template>
-    <div class="grid gap-6 xl:grid-cols-[360px,minmax(0,1fr),360px]">
+    <div class="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr),360px]">
         <section class="rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900">{{ t('Campaign rail') }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ t('Keep active campaigns visible and jump directly into the next action.') }}</p>
+                    <h2 class="text-lg font-semibold text-slate-900">{{ t('Launch queue') }}</h2>
+                    <p class="mt-1 text-sm text-slate-500">{{ t('Keep launch-ready campaigns visible and move between execution without losing context.') }}</p>
                 </div>
                 <button type="button" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700" @click="$emit('openStudio', '')">{{ t('New') }}</button>
             </div>
@@ -50,6 +50,13 @@
                             </div>
                         </div>
 
+                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <article v-for="card in campaignSummaryCards" :key="card.label" class="rounded-3xl border border-slate-200 bg-white p-4">
+                                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">{{ t(card.label) }}</div>
+                                <div class="mt-3 text-xl font-semibold text-slate-900">{{ card.value }}</div>
+                            </article>
+                        </div>
+
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="space-y-2">
                                 <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -73,11 +80,29 @@
                             </div>
                         </div>
 
-                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <button type="button" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white" @click="previewCampaign">{{ t('Preview next lead') }}</button>
-                            <button type="button" class="rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white" @click="launchPreviewCall">{{ t('Place preview call') }}</button>
-                            <button type="button" class="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200" @click="manualDial">{{ t('Dial selected lead') }}</button>
-                            <button type="button" class="rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white" @click="runCampaign">{{ t('Run automated cycle') }}</button>
+                        <div class="grid gap-3 xl:grid-cols-3">
+                            <article class="rounded-3xl border border-slate-200 bg-white p-4">
+                                <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">{{ t('Assist') }}</div>
+                                <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Manual and preview') }}</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-500">{{ t('Keep an agent in control of the cadence when the operation needs context before the conversation starts.') }}</p>
+                                <div class="mt-4 grid gap-2">
+                                    <button type="button" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white" @click="previewCampaign">{{ t('Preview next lead') }}</button>
+                                    <button type="button" class="rounded-2xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white" @click="launchPreviewCall">{{ t('Place preview call') }}</button>
+                                    <button type="button" class="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-slate-200" @click="manualDial">{{ t('Dial selected lead') }}</button>
+                                </div>
+                            </article>
+                            <article class="rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
+                                <div class="text-[11px] uppercase tracking-[0.22em] text-emerald-600">{{ t('Automate') }}</div>
+                                <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Progressive or power run') }}</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">{{ t('Hand the pacing back to the platform when queue staffing, retries, and compliance are already ready.') }}</p>
+                                <button type="button" class="mt-4 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white" @click="runCampaign">{{ t('Run automated cycle') }}</button>
+                            </article>
+                            <article class="rounded-3xl border border-amber-200 bg-amber-50 p-4">
+                                <div class="text-[11px] uppercase tracking-[0.22em] text-amber-700">{{ t('Prepare') }}</div>
+                                <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Next best action') }}</h3>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">{{ t('Use the preview pane to decide whether the agent should call now, skip, or adjust the campaign before execution.') }}</p>
+                                <button type="button" class="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 ring-1 ring-amber-200" @click="$emit('openStudio', selectedCampaign.uuid)">{{ t('Open campaign studio') }}</button>
+                            </article>
                         </div>
                     </div>
 
@@ -88,6 +113,7 @@
                             <div>{{ previewLead.phone_number }}</div>
                             <div>{{ previewLead.company || t('No company') }}</div>
                             <div>{{ previewLead.email || '-' }}</div>
+                            <div>{{ previewLead.state_code || t('No state') }} | {{ previewLead.timezone || t('No timezone') }}</div>
                         </div>
                     </div>
                 </div>
@@ -156,6 +182,20 @@ const operation = reactive({ extension_uuid: props.options?.extensions?.[0]?.val
 
 const selectedCampaign = computed(() => props.campaigns.find((campaign) => campaign.uuid === selectedCampaignUuid.value) || null)
 const localAlerts = computed(() => props.alerts || [])
+const campaignSummaryCards = computed(() => {
+    const campaign = selectedCampaign.value
+
+    if (!campaign) {
+        return []
+    }
+
+    return [
+        { label: 'Maximum attempts', value: Number(campaign.max_attempts || 0) || '-' },
+        { label: 'Daily retry limit', value: Number(campaign.daily_retry_limit || 0) || '-' },
+        { label: 'Retry backoff (minutes)', value: Number(campaign.retry_backoff_minutes || 0) || '-' },
+        { label: 'Compliance anchor', value: campaign.compliance_profile_name || campaign.default_state_code || t('National baseline') },
+    ]
+})
 const readinessItems = computed(() => {
     const campaign = selectedCampaign.value
     if (!campaign) return []

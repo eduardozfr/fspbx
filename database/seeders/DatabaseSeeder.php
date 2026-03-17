@@ -988,7 +988,7 @@ class DatabaseSeeder extends Seeder
                 'default_setting_category'      => 'scheduled_jobs',
                 'default_setting_subcategory'   => 'scheduled_jobs_timezone',
                 'default_setting_name'          => 'text',
-                'default_setting_value'         => "America/Los_Angeles",
+                'default_setting_value'         => "America/Sao_Paulo",
                 'default_setting_enabled'       => true,
                 'default_setting_description'   => "Timezone used when executing scheduled maintenance jobs. This timezone determines when time-based tasks are triggered. If not set, the application timezone will be used.",
             ],

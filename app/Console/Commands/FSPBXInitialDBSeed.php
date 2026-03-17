@@ -8,6 +8,7 @@ use App\Models\UserSetting;
 use App\Models\Domain;
 use App\Models\Groups;
 use App\Models\UserGroup;
+use App\Models\SwitchVariable;
 use Illuminate\Support\Str;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
@@ -97,6 +98,7 @@ class FSPBXInitialDBSeed extends Command
 
         // Step 6: Run Upgrade Defaults
         $this->runUpgradeDefaults();
+        $this->configureSwitchSoundDefaults();
 
         // Step 6a: configure Reverb
         $this->configureReverb();
@@ -577,7 +579,7 @@ class FSPBXInitialDBSeed extends Command
                 'user_setting_category'    => 'domain',
                 'user_setting_subcategory' => 'language',
                 'user_setting_name'        => 'code',
-                'user_setting_value'       => 'en-us',
+                'user_setting_value'       => 'pt-br',
                 'user_setting_enabled'     => true,
             ],
             [
@@ -587,7 +589,7 @@ class FSPBXInitialDBSeed extends Command
                 'user_setting_category'    => 'domain',
                 'user_setting_subcategory' => 'time_zone',
                 'user_setting_name'        => 'name',
-                'user_setting_value'       => 'America/Los_Angeles',
+                'user_setting_value'       => 'America/Sao_Paulo',
                 'user_setting_enabled'     => true,
             ],
         ];
@@ -603,7 +605,34 @@ class FSPBXInitialDBSeed extends Command
             );
         }
 
-        $this->info("✅ User settings initialized (Language: en-us, Time Zone: America/Los_Angeles).");
+        $this->info("✅ User settings initialized (Language: pt-br, Time Zone: America/Sao_Paulo).");
+    }
+
+    private function configureSwitchSoundDefaults(): void
+    {
+        $defaults = [
+            'default_language' => 'pt',
+            'default_dialect' => 'br',
+            'default_voice' => 'karina',
+        ];
+
+        foreach ($defaults as $name => $value) {
+            $existing = SwitchVariable::where('var_name', $name)->first();
+
+            $payload = [
+                'var_category' => $existing?->var_category ?? 'Defaults',
+                'var_name' => $name,
+                'var_value' => $value,
+                'var_command' => $existing?->var_command ?? 'set',
+                'var_hostname' => $existing?->var_hostname,
+                'var_enabled' => $existing?->var_enabled ?? 'true',
+                'var_uuid' => $existing?->var_uuid ?? (string) Str::uuid(),
+            ];
+
+            SwitchVariable::updateOrCreate(['var_name' => $name], $payload);
+        }
+
+        $this->info("FreeSWITCH sound defaults configured to pt/br/karina.");
     }
 
     /**

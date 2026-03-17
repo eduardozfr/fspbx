@@ -26,9 +26,9 @@ local function main()
     local extension_uuid = session:getVariable("extension_uuid")
 
     local sounds_dir        = session:getVariable("sounds_dir")
-    local default_language  = session:getVariable("default_language") or "en"
-    local default_dialect   = session:getVariable("default_dialect") or "us"
-    local default_voice     = session:getVariable("default_voice") or "callie"
+    local default_language  = session:getVariable("default_language") or "pt"
+    local default_dialect   = session:getVariable("default_dialect") or "br"
+    local default_voice     = session:getVariable("default_voice") or "karina"
 
     if not (domain_uuid and domain_name and extension_uuid) then
         log("ERR", "Missing required session variables (domain_uuid/domain_name/extension_uuid)")
