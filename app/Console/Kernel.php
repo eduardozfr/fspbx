@@ -165,6 +165,7 @@ class Kernel extends ConsoleKernel
         Commands\ClearExportDirectory::class,
         Commands\VersionSetCommand::class,
         Commands\ConvertDate::class,
+        Commands\ResetUserPasswordCommand::class,
     ];
 
     protected function commands()

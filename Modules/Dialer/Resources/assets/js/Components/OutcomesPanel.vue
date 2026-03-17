@@ -22,27 +22,36 @@
             {{ message.text }}
         </div>
 
-        <div class="grid gap-6 xl:grid-cols-[420px,minmax(0,1fr)]">
-            <section class="space-y-6">
-                <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-xl font-semibold text-slate-900">{{ t('Disposition design') }}</h2>
-                        <HelpTooltip :text="t('Outcomes drive retries, callbacks, DNC handling, and reporting quality.')"/>
-                    </div>
-                    <form class="mt-5 space-y-4" @submit.prevent="submitDisposition">
-                        <input v-model="dispositionForm.name" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Disposition name')" />
-                        <input v-model="dispositionForm.code" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Machine code')" />
-                        <textarea v-model="dispositionForm.description" rows="3" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Describe when the agent should choose this outcome.')" />
-                        <div class="grid gap-3 md:grid-cols-2">
-                            <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.is_final" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Final outcome') }}</span></label>
-                            <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.is_callback" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Creates callback') }}</span></label>
-                            <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.mark_dnc" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Marks DNC') }}</span></label>
-                            <input v-model.number="dispositionForm.default_callback_offset_minutes" type="number" min="1" max="43200" class="rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Default callback offset (minutes)')" />
-                        </div>
-                        <button type="submit" class="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white">{{ t('Save disposition') }}</button>
-                    </form>
-                </section>
+        <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">{{ t('Outcome operating model') }}</h2>
+                    <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-500">{{ t('Keep the page centered on the live result queue and the active catalog. Create or refine dispositions from guided action modals instead of embedding another form wall in the workspace.') }}</p>
+                </div>
+                <button type="button" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white" @click="showDispositionModal = true">{{ t('Create disposition') }}</button>
+            </div>
 
+            <div class="mt-5 grid gap-4 xl:grid-cols-3">
+                <article class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
+                    <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">{{ t('Final outcomes') }}</div>
+                    <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Close the lifecycle cleanly') }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-500">{{ t('Use final outcomes for sale, no-contact closure, invalid destination, and any case that should remove the lead from future recycle logic.') }}</p>
+                </article>
+                <article class="rounded-[1.75rem] border border-cyan-100 bg-cyan-50 p-5">
+                    <div class="text-[11px] uppercase tracking-[0.22em] text-cyan-700">{{ t('Callback outcomes') }}</div>
+                    <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Preserve supervised follow-up') }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ t('Callback outcomes should create a visible task with timing and ownership, not leave follow-up buried in notes or manual memory.') }}</p>
+                </article>
+                <article class="rounded-[1.75rem] border border-rose-100 bg-rose-50 p-5">
+                    <div class="text-[11px] uppercase tracking-[0.22em] text-rose-700">{{ t('DNC outcomes') }}</div>
+                    <h3 class="mt-3 text-lg font-semibold text-slate-900">{{ t('Protect the number immediately') }}</h3>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ t('Opt-out, complaint, or blocked-number outcomes must instantly protect the contact and stay visible to the whole operation.') }}</p>
+                </article>
+            </div>
+        </section>
+
+        <div class="grid gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+            <section class="space-y-6">
                 <section class="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -66,6 +75,7 @@
                             </div>
                             <div v-if="disposition.default_callback_offset_minutes" class="mt-3 text-xs text-slate-500">{{ t('Default callback offset (minutes)') }}: {{ disposition.default_callback_offset_minutes }}</div>
                         </article>
+                        <div v-if="!dispositions.length" class="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-8 text-sm text-slate-500">{{ t('No dispositions are configured yet.') }}</div>
                     </div>
                 </section>
             </section>
@@ -79,7 +89,7 @@
                 </div>
 
                 <div class="mt-5 overflow-hidden rounded-3xl border border-slate-200">
-                    <div class="grid grid-cols-[minmax(0,1.1fr),100px,100px,120px,220px] gap-3 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                    <div class="grid grid-cols-[minmax(0,1.1fr),100px,100px,120px,160px] gap-3 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
                         <div>{{ t('Attempt') }}</div>
                         <div>{{ t('AMD') }}</div>
                         <div>{{ t('Hangup') }}</div>
@@ -87,7 +97,7 @@
                         <div>{{ t('Supervisor action') }}</div>
                     </div>
                     <div v-if="attempts.length" class="divide-y divide-slate-200">
-                        <div v-for="attempt in attempts" :key="attempt.uuid" class="grid grid-cols-[minmax(0,1.1fr),100px,100px,120px,220px] gap-3 px-4 py-4 text-sm">
+                        <div v-for="attempt in attempts" :key="attempt.uuid" class="grid grid-cols-[minmax(0,1.1fr),100px,100px,120px,160px] gap-3 px-4 py-4 text-sm">
                             <div class="min-w-0">
                                 <div class="truncate font-semibold text-slate-900">{{ attempt.lead_name || attempt.destination_number }}</div>
                                 <div class="mt-1 truncate text-xs text-slate-500">{{ attempt.campaign_name || '-' }} | {{ attempt.destination_number }} | {{ t(attempt.mode) }}</div>
@@ -98,14 +108,8 @@
                             <div>
                                 <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">{{ attempt.disposition || '-' }}</span>
                             </div>
-                            <div class="space-y-2">
-                                <select v-model="attemptForms[attempt.uuid].disposition_uuid" class="w-full rounded-2xl border-slate-300 shadow-sm">
-                                    <option value="">{{ t('Choose disposition') }}</option>
-                                    <option v-for="disposition in dispositions" :key="disposition.uuid" :value="disposition.uuid">{{ disposition.name }} ({{ disposition.code }})</option>
-                                </select>
-                                <input v-model="attemptForms[attempt.uuid].preferred_callback_at" type="datetime-local" class="w-full rounded-2xl border-slate-300 shadow-sm" />
-                                <input v-model="attemptForms[attempt.uuid].notes" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Disposition notes')" />
-                                <button type="button" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white" @click="saveAttemptDisposition(attempt.uuid)">{{ t('Save disposition') }}</button>
+                            <div>
+                                <button type="button" class="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-semibold text-white" @click="openAttemptModal(attempt.uuid)">{{ t('Classify') }}</button>
                             </div>
                         </div>
                     </div>
@@ -113,11 +117,76 @@
                 </div>
             </section>
         </div>
+
+        <ExecutiveModal
+            :show="showDispositionModal"
+            :title="t('Create disposition')"
+            :description="t('Define the operational meaning of the result, including whether it closes the lead, creates a callback, or protects the number.')"
+            :kicker="t('Outcome model')"
+            custom-class="sm:max-w-3xl"
+            @close="showDispositionModal = false"
+        >
+            <form class="space-y-4" @submit.prevent="submitDisposition">
+                <input v-model="dispositionForm.name" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Disposition name')" />
+                <input v-model="dispositionForm.code" type="text" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Machine code')" />
+                <textarea v-model="dispositionForm.description" rows="3" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Describe when the agent should choose this outcome.')" />
+                <div class="grid gap-3 md:grid-cols-2">
+                    <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.is_final" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Final outcome') }}</span></label>
+                    <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.is_callback" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Creates callback') }}</span></label>
+                    <label class="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm ring-1 ring-slate-200"><input v-model="dispositionForm.mark_dnc" type="checkbox" class="rounded border-slate-300 text-slate-950 focus:ring-slate-950" /><span>{{ t('Marks DNC') }}</span></label>
+                    <input v-model.number="dispositionForm.default_callback_offset_minutes" type="number" min="1" max="43200" class="rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Default callback offset (minutes)')" />
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" class="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700" @click="showDispositionModal = false">{{ t('Cancel') }}</button>
+                    <button type="submit" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">{{ t('Save disposition') }}</button>
+                </div>
+            </form>
+        </ExecutiveModal>
+
+        <ExecutiveModal
+            :show="showAttemptModal"
+            :title="selectedAttempt?.lead_name || selectedAttempt?.destination_number || t('Classify attempt')"
+            :description="t('Apply the right disposition with callback timing and supervisor notes while keeping the original AMD and hangup context visible.')"
+            :kicker="t('Attempt classification')"
+            custom-class="sm:max-w-3xl"
+            @close="closeAttemptModal"
+        >
+            <div v-if="selectedAttempt" class="space-y-5">
+                <div class="grid gap-3 md:grid-cols-3">
+                    <div class="rounded-3xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+                        <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">AMD</div>
+                        <div class="mt-2 text-sm font-semibold text-slate-900">{{ selectedAttempt.amd_result || '-' }}</div>
+                    </div>
+                    <div class="rounded-3xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+                        <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">{{ t('Hangup') }}</div>
+                        <div class="mt-2 text-sm font-semibold text-slate-900">{{ selectedAttempt.hangup_cause || '-' }}</div>
+                    </div>
+                    <div class="rounded-3xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+                        <div class="text-[11px] uppercase tracking-[0.22em] text-slate-400">{{ t('Current') }}</div>
+                        <div class="mt-2 text-sm font-semibold text-slate-900">{{ selectedAttempt.disposition || '-' }}</div>
+                    </div>
+                </div>
+
+                <form class="space-y-4" @submit.prevent="saveAttemptDisposition(selectedAttempt.uuid)">
+                    <select v-model="selectedAttemptForm.disposition_uuid" class="w-full rounded-2xl border-slate-300 shadow-sm">
+                        <option value="">{{ t('Choose disposition') }}</option>
+                        <option v-for="disposition in dispositions" :key="disposition.uuid" :value="disposition.uuid">{{ disposition.name }} ({{ disposition.code }})</option>
+                    </select>
+                    <input v-model="selectedAttemptForm.preferred_callback_at" type="datetime-local" class="w-full rounded-2xl border-slate-300 shadow-sm" />
+                    <textarea v-model="selectedAttemptForm.notes" rows="3" class="w-full rounded-2xl border-slate-300 shadow-sm" :placeholder="t('Disposition notes')" />
+                    <div class="flex justify-end gap-3">
+                        <button type="button" class="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700" @click="closeAttemptModal">{{ t('Cancel') }}</button>
+                        <button type="submit" class="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">{{ t('Save disposition') }}</button>
+                    </div>
+                </form>
+            </div>
+        </ExecutiveModal>
     </div>
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import ExecutiveModal from '@pages/components/modal/ExecutiveModal.vue'
 import HelpTooltip from '@generalComponents/HelpTooltip.vue'
 import { useLocale } from '@composables/useLocale'
 
@@ -129,6 +198,9 @@ const props = defineProps({
 
 const { t } = useLocale()
 const message = reactive({ type: 'success', text: '' })
+const showDispositionModal = ref(false)
+const showAttemptModal = ref(false)
+const selectedAttemptUuid = ref('')
 const dispositionForm = reactive({ name: '', code: '', is_final: false, is_callback: false, mark_dnc: false, default_callback_offset_minutes: '', description: '' })
 const attemptForms = reactive(Object.fromEntries(props.attempts.map((attempt) => [attempt.uuid, { disposition_uuid: '', notes: '', preferred_callback_at: '' }])))
 
@@ -179,6 +251,19 @@ const summaryCards = computed(() => ([
         helpTone: 'text-amber-700/80',
     },
 ]))
+
+const selectedAttempt = computed(() => props.attempts.find((attempt) => attempt.uuid === selectedAttemptUuid.value) || null)
+const selectedAttemptForm = computed(() => attemptForms[selectedAttemptUuid.value] || { disposition_uuid: '', notes: '', preferred_callback_at: '' })
+
+const openAttemptModal = (attemptUuid) => {
+    selectedAttemptUuid.value = attemptUuid
+    showAttemptModal.value = true
+}
+
+const closeAttemptModal = () => {
+    showAttemptModal.value = false
+    selectedAttemptUuid.value = ''
+}
 
 const setMessage = (type, text) => {
     message.type = type
