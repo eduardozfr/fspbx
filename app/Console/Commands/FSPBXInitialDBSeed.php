@@ -340,10 +340,90 @@ class FSPBXInitialDBSeed extends Command
 
         $this->info("✅ NPM dependencies installed successfully.\n");
 
-        // Start the spinner for progress indication
+        $this->runNpmBuildWithFallback($npmEnvironment);
+    }
+
+    private function buildNpmEnvironment(): array
+    {
+        return [
+            'CI' => 'true',
+            'FS_PBX_VITE_LIGHT_BUILD' => getenv('FS_PBX_VITE_LIGHT_BUILD') ?: '1',
+            'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
+        ];
+    }
+
+    private function resolveNodeBuildMemoryLimit(): int
+    {
+        $configuredLimit = (int) getenv('FS_PBX_NODE_BUILD_MEMORY');
+
+        if ($configuredLimit > 0) {
+            return $configuredLimit;
+        }
+
+        $systemMemoryMb = $this->detectSystemMemoryMb();
+        if ($systemMemoryMb !== null) {
+            if ($systemMemoryMb <= 1536) {
+                return 768;
+            }
+
+            if ($systemMemoryMb <= 3072) {
+                return 1024;
+            }
+
+            if ($systemMemoryMb <= 6144) {
+                return 1280;
+            }
+        }
+
+        return 1536;
+    }
+
+    private function detectSystemMemoryMb(): ?int
+    {
+        if (!is_readable('/proc/meminfo')) {
+            return null;
+        }
+
+        $meminfo = @file_get_contents('/proc/meminfo');
+        if ($meminfo === false) {
+            return null;
+        }
+
+        if (!preg_match('/^MemTotal:\s+(\d+)\s+kB$/m', $meminfo, $matches)) {
+            return null;
+        }
+
+        return (int) floor(((int) $matches[1]) / 1024);
+    }
+
+    private function runNpmBuildWithFallback(array $npmEnvironment): void
+    {
         $this->info("🚀 Building frontend assets... (This may take a while)");
 
-        $spinnerChars = ['-', '\\', '|', '/']; // Spinner animation characters
+        $buildProcess = $this->runBuildProcess($npmEnvironment);
+        if ($buildProcess->isSuccessful()) {
+            echo "\r✅ Frontend assets built successfully!          \n";
+            return;
+        }
+
+        if (!$this->shouldRetryBuild($buildProcess)) {
+            throw new ProcessFailedException($buildProcess);
+        }
+
+        echo "\r";
+        $this->warn('Frontend build hit memory pressure. Retrying once in ultra-light mode...');
+
+        $fallbackProcess = $this->runBuildProcess($this->buildUltraLightNpmEnvironment($npmEnvironment));
+        if (!$fallbackProcess->isSuccessful()) {
+            throw new ProcessFailedException($fallbackProcess);
+        }
+
+        echo "\r✅ Frontend assets built successfully!          \n";
+    }
+
+    private function runBuildProcess(array $npmEnvironment): Process
+    {
+        $spinnerChars = ['-', '\\', '|', '/'];
         $index = 0;
 
         $buildProcess = new Process(['npm', 'run', 'build'], base_path(), $npmEnvironment);
@@ -352,30 +432,43 @@ class FSPBXInitialDBSeed extends Command
 
         while ($buildProcess->isRunning()) {
             echo "\r\e[36m" . $spinnerChars[$index % 4] . " Building frontend assets... \e[0m";
-            usleep(250000); // Update every 250ms
+            usleep(250000);
             $index++;
         }
 
-        if (!$buildProcess->isSuccessful()) {
-            throw new ProcessFailedException($buildProcess);
+        return $buildProcess;
+    }
+
+    private function shouldRetryBuild(Process $process): bool
+    {
+        if (in_array($process->getExitCode(), [134, 137], true)) {
+            return true;
         }
 
-        echo "\r✅ Frontend assets built successfully!          \n";
+        $combinedOutput = Str::lower($process->getOutput() . "\n" . $process->getErrorOutput());
+
+        return Str::contains($combinedOutput, [
+            'allocation failed',
+            'heap out of memory',
+            'javascript heap out of memory',
+            'killed',
+            'out of memory',
+        ]);
     }
 
-    private function buildNpmEnvironment(): array
+    private function buildUltraLightNpmEnvironment(array $npmEnvironment): array
     {
-        return [
-            'CI' => 'true',
-            'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
-        ];
-    }
+        $npmEnvironment['FS_PBX_VITE_LIGHT_BUILD'] = '1';
+        $npmEnvironment['FS_PBX_SASS_SILENCE_DEPRECATIONS'] = 'legacy-js-api,import,global-builtin,color-functions,mixed-decls';
 
-    private function resolveNodeBuildMemoryLimit(): int
-    {
-        $configuredLimit = (int) (getenv('FS_PBX_NODE_BUILD_MEMORY') ?: 2048);
+        $fallbackMemoryLimit = $this->resolveNodeBuildMemoryLimit();
+        if ($fallbackMemoryLimit > 1024) {
+            $fallbackMemoryLimit = 1024;
+        }
 
-        return $configuredLimit > 0 ? $configuredLimit : 2048;
+        $npmEnvironment['NODE_OPTIONS'] = '--max-old-space-size=' . $fallbackMemoryLimit;
+
+        return $npmEnvironment;
     }
 
     private function ensureModuleStatusesFile(): void

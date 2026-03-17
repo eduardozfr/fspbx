@@ -8,11 +8,69 @@ import fs from 'fs';
 const VITE_HOST = process.env.VITE_HOST || 'localhost';
 const VITE_PORT = process.env.VITE_PORT || 3000;
 const VITE_ORIGIN = process.env.VITE_ORIGIN;
+const LIGHT_BUILD = ['1', 'true', 'yes'].includes(String(process.env.FS_PBX_VITE_LIGHT_BUILD || '').toLowerCase());
+const SASS_SILENCE_DEPRECATIONS = String(
+    process.env.FS_PBX_SASS_SILENCE_DEPRECATIONS || 'legacy-js-api,import,global-builtin,color-functions,mixed-decls'
+)
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+function resolveManualChunk(id) {
+    if (!id.includes('node_modules')) {
+        return undefined;
+    }
+
+    if (id.includes('@syncfusion')) {
+        return 'vendor-syncfusion';
+    }
+
+    if (
+        id.includes('/vue') ||
+        id.includes('@vue') ||
+        id.includes('@inertiajs') ||
+        id.includes('@headlessui') ||
+        id.includes('@heroicons')
+    ) {
+        return 'vendor-vue';
+    }
+
+    if (
+        id.includes('bootstrap') ||
+        id.includes('jquery') ||
+        id.includes('select2') ||
+        id.includes('daterangepicker') ||
+        id.includes('dropzone') ||
+        id.includes('dragula') ||
+        id.includes('simplebar')
+    ) {
+        return 'vendor-ui';
+    }
+
+    if (
+        id.includes('laravel-echo') ||
+        id.includes('pusher-js') ||
+        id.includes('moment-timezone')
+    ) {
+        return 'vendor-realtime';
+    }
+
+    if (
+        id.includes('chart.js') ||
+        id.includes('vue-chartjs') ||
+        id.includes('britecharts')
+    ) {
+        return 'vendor-charts';
+    }
+
+    return 'vendor';
+}
 
 async function getConfig() {
     console.log('Vite configured host:', VITE_HOST);
     console.log('Vite configured port:', VITE_PORT);
     console.log('Vite configured CORS origin:', VITE_ORIGIN);
+    console.log('Vite light build enabled:', LIGHT_BUILD);
 
     const paths = [
 
@@ -111,8 +169,26 @@ async function getConfig() {
             emptyOutDir: true,
             sourcemap: false,
             reportCompressedSize: false,
-            minify: 'esbuild',
-            cssMinify: 'esbuild',
+            assetsInlineLimit: LIGHT_BUILD ? 0 : undefined,
+            cssCodeSplit: true,
+            minify: LIGHT_BUILD ? false : 'esbuild',
+            cssMinify: LIGHT_BUILD ? false : 'esbuild',
+            modulePreload: LIGHT_BUILD ? false : undefined,
+            chunkSizeWarningLimit: 1500,
+            rollupOptions: {
+                treeshake: LIGHT_BUILD ? false : undefined,
+                output: {
+                    manualChunks: resolveManualChunk,
+                },
+            },
+        },
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    quietDeps: true,
+                    silenceDeprecations: SASS_SILENCE_DEPRECATIONS,
+                },
+            },
         },
         resolve: {
             alias: {

@@ -161,7 +161,7 @@ class UpdateApp extends Command
         // Update Vue files
         $this->ensureModuleStatusesFile();
         $this->executeCommand('npm install --no-audit --no-fund', 1800, $this->buildNpmEnvironment());
-        $this->executeCommand('npm run build', 1800, $this->buildNpmEnvironment());
+        $this->executeNpmBuildWithFallback();
 
         // Output the current working directory
         $currentDirectory = $this->getCurrentDirectory();
@@ -212,15 +212,136 @@ class UpdateApp extends Command
     {
         return [
             'CI' => 'true',
+            'FS_PBX_VITE_LIGHT_BUILD' => getenv('FS_PBX_VITE_LIGHT_BUILD') ?: '1',
             'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
         ];
     }
 
     protected function resolveNodeBuildMemoryLimit(): int
     {
-        $configuredLimit = (int) (getenv('FS_PBX_NODE_BUILD_MEMORY') ?: 2048);
+        $configuredLimit = (int) getenv('FS_PBX_NODE_BUILD_MEMORY');
 
-        return $configuredLimit > 0 ? $configuredLimit : 2048;
+        if ($configuredLimit > 0) {
+            return $configuredLimit;
+        }
+
+        $systemMemoryMb = $this->detectSystemMemoryMb();
+        if ($systemMemoryMb !== null) {
+            if ($systemMemoryMb <= 1536) {
+                return 768;
+            }
+
+            if ($systemMemoryMb <= 3072) {
+                return 1024;
+            }
+
+            if ($systemMemoryMb <= 6144) {
+                return 1280;
+            }
+        }
+
+        return 1536;
+    }
+
+    protected function detectSystemMemoryMb(): ?int
+    {
+        if (!is_readable('/proc/meminfo')) {
+            return null;
+        }
+
+        $meminfo = @file_get_contents('/proc/meminfo');
+        if ($meminfo === false) {
+            return null;
+        }
+
+        if (!preg_match('/^MemTotal:\s+(\d+)\s+kB$/m', $meminfo, $matches)) {
+            return null;
+        }
+
+        return (int) floor(((int) $matches[1]) / 1024);
+    }
+
+    protected function executeNpmBuildWithFallback(): void
+    {
+        $environment = $this->buildNpmEnvironment();
+        $process = $this->runShellCommand('npm run build', 1800, $environment);
+
+        if ($process->isSuccessful()) {
+            return;
+        }
+
+        if (!$this->shouldRetryBuild($process)) {
+            $this->error("Command 'npm run build' failed.");
+            exit(1);
+        }
+
+        $this->warn('Frontend build hit memory pressure. Retrying once in ultra-light mode...');
+
+        $fallbackEnvironment = $this->buildUltraLightNpmEnvironment($environment);
+        $fallbackProcess = $this->runShellCommand('npm run build', 1800, $fallbackEnvironment);
+
+        if (!$fallbackProcess->isSuccessful()) {
+            $this->error("Command 'npm run build' failed.");
+            exit(1);
+        }
+    }
+
+    protected function shouldRetryBuild(Process $process): bool
+    {
+        if (in_array($process->getExitCode(), [134, 137], true)) {
+            return true;
+        }
+
+        $combinedOutput = strtolower($process->getOutput() . "\n" . $process->getErrorOutput());
+
+        foreach ([
+            'allocation failed',
+            'heap out of memory',
+            'javascript heap out of memory',
+            'killed',
+            'out of memory',
+        ] as $needle) {
+            if (str_contains($combinedOutput, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function buildUltraLightNpmEnvironment(array $environment): array
+    {
+        $environment['FS_PBX_VITE_LIGHT_BUILD'] = '1';
+        $environment['FS_PBX_SASS_SILENCE_DEPRECATIONS'] = 'legacy-js-api,import,global-builtin,color-functions,mixed-decls';
+
+        $fallbackMemoryLimit = $this->resolveNodeBuildMemoryLimit();
+        if ($fallbackMemoryLimit > 1024) {
+            $fallbackMemoryLimit = 1024;
+        }
+
+        $environment['NODE_OPTIONS'] = '--max-old-space-size=' . $fallbackMemoryLimit;
+
+        return $environment;
+    }
+
+    protected function runShellCommand(string $command, int $timeout = 60, array $env = []): Process
+    {
+        $process = Process::fromShellCommandline($command, base_path(), $env ?: null);
+        $process->setTimeout($timeout);
+
+        if ($this->supportsTty()) {
+            $process->setTty(true);
+        }
+
+        $process->run(function ($type, $buffer) {
+            if (Process::ERR === $type) {
+                $this->error($buffer);
+            } else {
+                $this->output->write($buffer);
+            }
+        });
+
+        return $process;
     }
 
     protected function ensureModuleStatusesFile(): void
