@@ -9,6 +9,23 @@ const viteBinary = resolve(projectRoot, 'node_modules', 'vite', 'bin', 'vite.js'
 const outputDirectory = resolve(projectRoot, 'storage', 'app', 'public', 'vite');
 const aceSourceDirectory = resolve(projectRoot, 'node_modules', 'ace-builds', 'src-noconflict');
 const aceTargetDirectory = resolve(projectRoot, 'public', 'vendor', 'ace');
+const defaultBuildMemoryMb = Number.parseInt(process.env.FS_PBX_NODE_BUILD_MEMORY_MB || '4096', 10);
+
+function resolveBuildNodeOptions() {
+    const existingNodeOptions = String(process.env.NODE_OPTIONS || '').trim();
+
+    if (/--max-old-space-size(?:=|\s+)\d+/i.test(existingNodeOptions)) {
+        return existingNodeOptions;
+    }
+
+    if (!Number.isFinite(defaultBuildMemoryMb) || defaultBuildMemoryMb <= 0) {
+        return existingNodeOptions;
+    }
+
+    return [existingNodeOptions, `--max-old-space-size=${defaultBuildMemoryMb}`]
+        .filter(Boolean)
+        .join(' ');
+}
 
 function runViteBuild(target, emptyOutDir) {
     return new Promise((resolveBuild, rejectBuild) => {
@@ -21,6 +38,7 @@ function runViteBuild(target, emptyOutDir) {
                     ...process.env,
                     FS_PBX_VITE_BUILD_TARGET: target,
                     FS_PBX_VITE_EMPTY_OUT_DIR: emptyOutDir ? '1' : '0',
+                    NODE_OPTIONS: resolveBuildNodeOptions(),
                 },
                 stdio: 'inherit',
             },
@@ -86,6 +104,7 @@ async function main() {
     const requestedTarget = String(process.argv[2] || process.env.FS_PBX_VITE_BUILD_TARGET || '').toLowerCase();
 
     publishAceAssets();
+    console.log(`Vite production build Node heap: ${resolveBuildNodeOptions() || 'default runtime settings'}`);
 
     if (requestedTarget === 'all') {
         await runViteBuild('all', true);

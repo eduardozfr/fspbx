@@ -18,6 +18,50 @@ print_warn() {
     echo -e "\e[33m$1 \e[0m"
 }
 
+enable_time_sync_for_apt() {
+    if command -v timedatectl >/dev/null 2>&1; then
+        timedatectl set-ntp true >/dev/null 2>&1 || true
+    fi
+
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files systemd-timesyncd.service >/dev/null 2>&1; then
+        systemctl restart systemd-timesyncd >/dev/null 2>&1 || true
+    fi
+}
+
+run_apt_update() {
+    local apt_log
+    apt_log=$(mktemp)
+
+    if apt update 2>&1 | tee "$apt_log"; then
+        rm -f "$apt_log"
+        return 0
+    fi
+
+    if grep -Eqi "Release file .* is not valid yet" "$apt_log"; then
+        print_warn "APT metadata is newer than the current VPS clock. Attempting to re-enable NTP and retry once..."
+        print_warn "Current UTC time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+        enable_time_sync_for_apt
+        sleep 5
+
+        if apt update; then
+            rm -f "$apt_log"
+            return 0
+        fi
+
+        print_error "APT update still failed because the repository metadata is ahead of the server clock."
+        print_warn "Fix the VPS time first and rerun this installer. Suggested commands:"
+        print_warn "  timedatectl set-ntp true"
+        print_warn "  systemctl restart systemd-timesyncd"
+        print_warn "  timedatectl status"
+        rm -f "$apt_log"
+        return 1
+    fi
+
+    print_error "APT update failed. Review the output above and rerun after fixing the package sources."
+    rm -f "$apt_log"
+    return 1
+}
+
 sync_supervisor_program() {
     local source_conf="$1"
     local destination_dir="/etc/supervisor/conf.d"
@@ -228,8 +272,12 @@ os_codename=$(lsb_release -c -s)
 
 print_success "Detected OS Codename: $os_codename"
 
+print_success "Pre-synchronizing dialer runtime listener in Supervisor..."
+sync_supervisor_program "/var/www/fspbx/install/fs-esl-listener-dialer.conf"
+reload_supervisor_program "fs-esl-listener-dialer"
+
 # Upgrade packages
-apt update
+run_apt_update
 
 # Install dependencies
 apt install -y autoconf automake devscripts g++ git-core libncurses5-dev libtool make libjpeg-dev \
