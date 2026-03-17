@@ -102,7 +102,7 @@ install_required_ptbr_sound_set() {
                     failed=1
                     break
                 fi
-            fi
+            done
 
             if [ "$failed" -eq 0 ]; then
                 RESOLVED_PTBR_SOUND_VERSION="$version"
