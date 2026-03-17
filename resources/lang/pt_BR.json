@@ -758,5 +758,154 @@
   "Create at least one operation-specific profile so campaigns carry explicit governance.": "Crie pelo menos um perfil especifico da operacao para que as campanhas tenham governanca explicita.",
   "Automated campaign without queue handoff": "Campanha automatizada sem entrega para fila",
   "Campaign bypassing DNC protection": "Campanha ignorando a protecao de DNC",
-  "Not used": "Nao utilizado"
+  "Not used": "Nao utilizado",
+  "Operator command desk": "Mesa de comando do operador",
+  "Keep manual launch, preview, paced cycles, and the latest operational risk signals inside one action board.": "Mantenha lancamento manual, preview, ciclos automatizados e os sinais mais recentes de risco operacional dentro de um unico painel de acao.",
+  "Campaign cockpit": "Cockpit da campanha",
+  "Choose the active campaign, load the next preview lead, or trigger an automated cycle without leaving the workspace.": "Escolha a campanha ativa, carregue o proximo lead de preview ou dispare um ciclo automatizado sem sair do workspace.",
+  "Open in studio": "Abrir no estudio",
+  "Choose campaign": "Escolher campanha",
+  "Shows whether the selected campaign runs as manual, preview, progressive, or power.": "Mostra se a campanha selecionada roda em modo manual, preview, progressivo ou power.",
+  "Progressive and power should always have a queue handoff for live answers.": "Progressivo e power devem sempre ter uma entrega para fila quando houver atendimento humano.",
+  "Native AVMD keeps voicemail detection inside FreeSWITCH without depending on a webhook.": "O AVMD nativo mantem a deteccao de caixa postal dentro do FreeSWITCH sem depender de webhook.",
+  "Use this ceiling to stop automated campaigns from creating more live calls than the floor can absorb.": "Use este teto para impedir que campanhas automatizadas criem mais chamadas em andamento do que o piso consegue absorver.",
+  "Execution lane": "Faixa de execucao",
+  "Choose a campaign to start operating the dialer desk.": "Escolha uma campanha para comecar a operar a mesa do discador.",
+  "This campaign is automated. Review queue handoff, AMD posture, and inflight guardrails before triggering a new cycle.": "Esta campanha e automatizada. Revise entrega para fila, postura de AMD e guardrails de chamadas em andamento antes de disparar um novo ciclo.",
+  "This campaign is running in preview mode. Load the next lead, review the record, and then place the call with the chosen agent extension.": "Esta campanha esta rodando em modo preview. Carregue o proximo lead, revise o cadastro e depois faca a chamada com o ramal do agente escolhido.",
+  "This campaign is running in manual mode. Select a lead and extension, then dispatch the call with full operator control.": "Esta campanha esta rodando em modo manual. Selecione um lead e um ramal e depois dispare a chamada com controle total do operador.",
+  "Load preview lead": "Carregar lead de preview",
+  "Next preview lead": "Proximo lead de preview",
+  "No preview lead loaded.": "Nenhum lead de preview foi carregado.",
+  "Selected lead": "Lead selecionado",
+  "Choose lead": "Escolher lead",
+  "Campaign command board": "Painel de comando das campanhas",
+  "Move from campaign to campaign with live visibility into queue handoff, pacing ceiling, AMD posture, and current load.": "Navegue de campanha em campanha com visibilidade ao vivo sobre entrega para fila, teto de cadencia, postura de AMD e carga atual.",
+  "ready": "prontas",
+  "Operate": "Operar",
+  "Governance board": "Painel de governanca",
+  "Surface the items that make a campaign safe to launch before the floor feels the impact.": "Traga para frente os itens que tornam uma campanha segura para lancar antes que o piso sinta o impacto.",
+  "Campaign selected": "Campanha selecionada",
+  "Agent extension selected": "Ramal do agente selecionado",
+  "Choose the campaign that the floor is about to operate.": "Escolha a campanha que o piso esta prestes a operar.",
+  "Pick the extension that will own manual or preview calls.": "Escolha o ramal que vai assumir as chamadas manuais ou de preview.",
+  "Queue handoff": "Entrega para fila",
+  "Do-not-call protection": "Protecao de nao ligar",
+  "Keep DNC protection enabled unless a legal exception has been documented outside the dialer.": "Mantenha a protecao de DNC ativada, a menos que uma excecao legal tenha sido documentada fora do discador.",
+  "AMD operating model": "Modelo operacional de AMD",
+  "AMD should use native AVMD or a fully configured external webhook before the campaign goes live.": "O AMD deve usar AVMD nativo ou um webhook externo totalmente configurado antes de a campanha entrar em operacao.",
+  "Inflight guardrail": "Guardrail de chamadas em andamento",
+  "Automated modes should have either a clear inflight ceiling or a deliberate pacing configuration.": "Modos automatizados devem ter um teto claro de chamadas em andamento ou uma configuracao de cadencia deliberada.",
+  "Ready": "Pronto",
+  "Attention": "Atencao",
+  "Do not hide high-risk configuration signals behind another tab. Keep them visible during launch.": "Nao esconda sinais de configuracao de alto risco atras de outra aba. Mantenha-os visiveis durante o lancamento.",
+  "No dialer alerts require attention right now.": "Nenhum alerta do discador exige atencao neste momento.",
+  "Recent dial flow": "Fluxo recente de discagem",
+  "Keep the latest outcome stream visible so supervisors can spot voicemail, busy, or invalid-number patterns quickly.": "Mantenha o fluxo mais recente de resultados visivel para que a supervisao identifique rapidamente padroes de caixa postal, ocupado ou numero invalido.",
+  "No recent attempts are visible right now.": "Nenhuma tentativa recente esta visivel neste momento.",
+  "No leads are available in this campaign right now.": "Nenhum lead esta disponivel nesta campanha neste momento.",
+  "Select a lead or load the next preview record before placing the call.": "Selecione um lead ou carregue o proximo registro de preview antes de fazer a chamada.",
+  "Wallboard overview": "Visao geral do wallboard",
+  "Bring SLA, waiting members, occupancy, callback pressure, and live conversations into one operating layer for the floor.": "Traga SLA, membros em espera, ocupacao, pressao de callbacks e conversas ao vivo para uma unica camada operacional do piso.",
+  "Open setup": "Abrir configuracao",
+  "Queue command board": "Painel de comando das filas",
+  "Rank queues by pressure so the supervisor sees waiting members, available coverage, abandonment, and SLA on the same line.": "Classifique as filas por pressao para que a supervisao veja espera, cobertura disponivel, abandono e SLA na mesma linha.",
+  "queues": "filas",
+  "Waiting": "Esperando",
+  "Coverage gap": "Defasagem de cobertura",
+  "Offline agents": "Agentes offline",
+  "No call center queues are configured yet.": "Nenhuma fila do Call Center foi configurada ainda.",
+  "Track live interactions with duration, state, and agent extension without leaving the wallboard.": "Acompanhe interacoes ao vivo com duracao, estado e ramal do agente sem sair do wallboard.",
+  "live": "ao vivo",
+  "Destination": "Destino",
+  "Duration": "Duracao",
+  "Callbacks due now": "Retornos vencendo agora",
+  "Keep the callback queue visible so overdue returns never disappear behind queue traffic.": "Mantenha a fila de callbacks visivel para que retornos vencidos nunca desaparecam atras do trafego das filas.",
+  "due": "vencendo",
+  "Unassigned": "Sem responsavel",
+  "No callbacks are overdue right now.": "Nenhum callback esta vencido neste momento.",
+  "No contact center alerts detected right now.": "Nenhum alerta do Contact Center foi identificado agora.",
+  "Pause breakdown": "Distribuicao de pausas",
+  "Agents currently parked in this reason.": "Agentes atualmente estacionados neste motivo.",
+  "No active pauses are open right now.": "Nenhuma pausa ativa esta aberta neste momento.",
+  "Floor checklist": "Checklist do piso",
+  "Protect queue coverage before speed.": "Proteja a cobertura das filas antes da velocidade.",
+  "If waiting members are above ready coverage, rebalance staffing before increasing outbound pressure.": "Se os membros em espera estiverem acima da cobertura pronta, reequilibre a equipe antes de aumentar a pressao de saida.",
+  "Callbacks deserve their own lane.": "Callbacks merecem uma faixa propria.",
+  "Overdue callbacks should be assigned with the same priority as live queue recovery.": "Callbacks vencidos devem ser atribuidos com a mesma prioridade da recuperacao das filas ao vivo.",
+  "Watch abandonment and occupancy together.": "Observe abandono e ocupacao em conjunto.",
+  "High occupancy can be healthy, but rising abandonment means the floor is outrunning available answer capacity.": "Ocupacao alta pode ser saudavel, mas abandono em alta significa que o piso esta indo alem da capacidade de atendimento disponivel.",
+  "Agent supervision": "Supervisao de agentes",
+  "Pause, resume, and review the live posture of every agent in the operation.": "Pause, retome e revise a postura ao vivo de cada agente da operacao.",
+  "Use one roster to understand who is online, who is busy, which queues they cover, and who needs immediate supervisor action.": "Use uma unica grade para entender quem esta online, quem esta ocupado, quais filas cada agente cobre e quem precisa de acao imediata da supervisao.",
+  "agents": "agentes",
+  "Live": "Ao vivo",
+  "Call": "Chamada",
+  "Supervisor action": "Acao do supervisor",
+  "No agents are provisioned for supervision yet.": "Nenhum agente foi provisionado para supervisao ainda.",
+  "Callback board": "Painel de retornos",
+  "Callbacks should be visible with queue, owner, and due time so the supervisor can rebalance work before SLAs slip.": "Callbacks devem ficar visiveis com fila, responsavel e vencimento para que a supervisao reequilibre o trabalho antes de o SLA escorregar.",
+  "callbacks": "retornos",
+  "No callbacks are pending in supervision right now.": "Nenhum callback esta pendente na supervisao neste momento.",
+  "Supervisor-ready list of current conversations.": "Lista de conversas atuais pronta para a supervisao.",
+  "Supervisor checklist": "Checklist do supervisor",
+  "Resolve callbacks before they age silently.": "Resolva callbacks antes que envelhecam em silencio.",
+  "Pending callbacks should always have a queue or owner before the next dialer cycle increases pressure.": "Callbacks pendentes devem sempre ter uma fila ou um responsavel antes que o proximo ciclo do discador aumente a pressao.",
+  "Pause reasons need discipline.": "Motivos de pausa exigem disciplina.",
+  "A supervisor should be able to explain why every paused agent is parked and when they return.": "A supervisao deve conseguir explicar por que cada agente pausado esta estacionado e quando retorna.",
+  "Monitor only with clear intent.": "Monitore apenas com intencao clara.",
+  "Listen, whisper, and barge actions should be deliberate and documented in the session notes.": "Acoes de escuta, sussurro e intervencao devem ser deliberadas e documentadas nas observacoes da sessao.",
+  "Agent paused successfully.": "Agente pausado com sucesso.",
+  "Agent resumed successfully.": "Agente retomado com sucesso.",
+  "Unable to update the callback right now.": "Nao foi possivel atualizar o callback agora.",
+  "Unable to start monitoring right now.": "Nao foi possivel iniciar a monitoria agora.",
+  "Configuration ledger": "Painel de configuracao",
+  "Build queues, agents, pause reasons, callbacks, and supervisor access from one denser setup surface.": "Monte filas, agentes, motivos de pausa, callbacks e acesso de supervisor a partir de uma unica superficie de configuracao mais densa.",
+  "Create the queue here, then attach the right agents and strategy before activating campaigns or callbacks.": "Crie a fila aqui e depois vincule os agentes e a estrategia corretos antes de ativar campanhas ou callbacks.",
+  "Use a registered extension and define timeout, wrap-up, and reject delay before putting the agent into production.": "Use um ramal registrado e defina timeout, pos-atendimento e atraso de rejeicao antes de colocar o agente em producao.",
+  "Provisioning creates or reuses the portal user so the extension can operate as an agent or supervisor.": "O provisionamento cria ou reaproveita o usuario do portal para que o ramal possa operar como agente ou supervisor.",
+  "Pause reasons and callbacks": "Motivos de pausa e callbacks",
+  "Define structured pause reasons and register callbacks with queue, agent, and preferred local time.": "Defina motivos estruturados de pausa e registre callbacks com fila, agente e horario local preferido.",
+  "Current queue portfolio": "Portfolio atual de filas",
+  "Keep queue strategy, agent coverage, and wait targets visible while you configure the floor.": "Mantenha estrategia da fila, cobertura de agentes e metas de espera visiveis enquanto voce configura o piso.",
+  "Ready agents": "Agentes prontos",
+  "Agent roster": "Quadro de agentes",
+  "Review the current estate of agents while adding or provisioning new ones.": "Revise o parque atual de agentes enquanto adiciona ou provisiona novos operadores.",
+  "Pause reason catalog": "Catalogo de motivos de pausa",
+  "A structured pause catalog keeps reporting and supervision consistent.": "Um catalogo estruturado de pausas mantem relatorios e supervisao consistentes.",
+  "No pause reasons are configured yet.": "Nenhum motivo de pausa foi configurado ainda.",
+  "Unable to provision access right now.": "Nao foi possivel provisionar o acesso agora."
+  ,"manual": "Manual"
+  ,"preview": "Preview"
+  ,"progressive": "Progressivo"
+  ,"power": "Power/Preditivo"
+  ,"draft": "Rascunho"
+  ,"active": "Ativo"
+  ,"paused": "Pausado"
+  ,"completed": "Concluido"
+  ,"queued": "Na fila"
+  ,"pending": "Pendente"
+  ,"assigned": "Atribuido"
+  ,"canceled": "Cancelado"
+  ,"new": "Novo"
+  ,"blocked": "Bloqueado"
+  ,"available": "Disponivel"
+  ,"busy": "Ocupado"
+  ,"offline": "Offline"
+  ,"talking": "Em conversa"
+  ,"National baseline": "Base nacional"
+  ,"No leads are visible right now.": "Nenhum lead esta visivel neste momento."
+  ,"No import batches are queued right now.": "Nenhum lote de importacao esta na fila neste momento."
+  ,"No do-not-call entries are visible right now.": "Nenhum registro de nao ligar esta visivel neste momento."
+  ,"Visible leads": "Leads visiveis"
+  ,"DNC registry": "Base de DNC"
+  ,"Import batches": "Lotes de importacao"
+  ,"Campaign targets": "Campanhas de destino"
+  ,"Blocked leads": "Leads bloqueados"
+  ,"Monitor wallboard KPIs, supervise agents, resolve callbacks, and manage queue operations from a denser floor-control workspace.": "Monitore KPIs do wallboard, supervisione agentes, resolva callbacks e gerencie a operacao das filas em um workspace mais denso de controle do piso."
+  ,"Waiting members": "Chamadores em espera"
+  ,"Callbacks due": "Retornos a vencer"
+  ,"Operations": "Operacoes"
+  ,"Supervision": "Supervisao"
+  ,"Configuration": "Configuracao"
 }

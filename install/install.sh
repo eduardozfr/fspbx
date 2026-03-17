@@ -15,6 +15,21 @@ print_warn() {
     echo -e "\e[33m$1 \e[0m"  # Yellow text
 }
 
+ensure_supervisor_program_ready() {
+    local program_name="$1"
+    local status_output=""
+
+    status_output=$(sudo supervisorctl status "$program_name" 2>/dev/null || true)
+
+    if echo "$status_output" | grep -Eq "\\b(RUNNING|STARTING|BACKOFF)\\b"; then
+        print_success "Supervisor registered $program_name: $status_output"
+        return 0
+    fi
+
+    print_error "Supervisor did not register $program_name correctly. Current status: ${status_output:-not found}"
+    return 1
+}
+
 # Ensure Laravel writable directories exist before Composer/Artisan run.
 ensure_laravel_directories() {
     local paths=(
@@ -1115,6 +1130,10 @@ else
     print_error "Error occurred while restarting FS PBX CDR Service process."
     exit 1
 fi
+
+ensure_supervisor_program_ready "fs-esl-listener-emergency"
+ensure_supervisor_program_ready "fs-esl-listener-dialer"
+ensure_supervisor_program_ready "fs-cdr-service"
 
 print_success "Seeding the database and configuring FS PBX..."
 ensure_build_swap

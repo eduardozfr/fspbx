@@ -7,7 +7,7 @@
                         <div>
                             <p class="text-sm uppercase tracking-[0.3em] text-slate-300">{{ t('Call Center') }}</p>
                             <h1 class="mt-2 text-3xl font-semibold">{{ t('Professional call center floor') }}</h1>
-                            <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{{ t('Monitor wallboard KPIs, supervise agents, resolve callbacks, and manage queue operations from a clearer floor-control workspace.') }}</p>
+                            <p class="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{{ t('Monitor wallboard KPIs, supervise agents, resolve callbacks, and manage queue operations from a denser floor-control workspace.') }}</p>
                         </div>
                         <div class="grid grid-cols-2 gap-3 lg:grid-cols-6">
                             <article class="rounded-3xl bg-white/10 p-4"><div class="text-[11px] uppercase tracking-[0.24em] text-slate-300">{{ t('Queues') }}</div><div class="mt-3 text-3xl font-semibold">{{ summary.queues }}</div></article>
@@ -33,9 +33,9 @@
                     <button v-for="tab in tabs" :key="tab.value" type="button" class="rounded-full px-4 py-2 text-sm font-semibold transition" :class="activeTab === tab.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 shadow'" @click="activeTab = tab.value">{{ t(tab.label) }}</button>
                 </div>
 
-                <OperationsPanel v-if="activeTab === 'operations'" :summary="summary" :queues="queues" :wallboard="wallboard" :alerts="alerts" :pause-breakdown="pauseBreakdown" @openConfig="activeTab = 'configuration'" />
+                <OperationsPanel v-if="activeTab === 'operations'" :summary="summary" :queues="queues" :wallboard="wallboard" :alerts="alerts" :pause-breakdown="pauseBreakdown" :callbacks="callbacks" @openConfig="activeTab = 'configuration'" />
                 <SupervisionPanel v-else-if="activeTab === 'supervision'" :agents="agents" :callbacks="callbacks" :pause-reasons="pauseReasons" :options="options" :wallboard="wallboard" :routes="routes" />
-                <ConfigurationPanel v-else :queues="queues" :options="options" :routes="routes" />
+                <ConfigurationPanel v-else :queues="queues" :agents="agents" :pause-reasons="pauseReasons" :callbacks="callbacks" :options="options" :routes="routes" />
             </div>
         </main>
     </MainLayout>
