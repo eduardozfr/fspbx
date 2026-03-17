@@ -103,6 +103,8 @@ cleanup_build_swap() {
 
 configure_build_environment_defaults() {
     local mem_total_kb
+    local swap_total_kb
+    local total_available_kb
 
     if [ -n "${FS_PBX_NODE_BUILD_MEMORY:-}" ]; then
         print_success "Using preconfigured Node build memory ceiling: ${FS_PBX_NODE_BUILD_MEMORY} MB."
@@ -110,15 +112,17 @@ configure_build_environment_defaults() {
     fi
 
     mem_total_kb=$(awk '/MemTotal:/ {print $2}' /proc/meminfo)
+    swap_total_kb=$(awk '/SwapTotal:/ {print $2}' /proc/meminfo)
+    total_available_kb=$(( ${mem_total_kb:-0} + ${swap_total_kb:-0} ))
 
-    if [ "${mem_total_kb:-0}" -le 1572864 ]; then
-        export FS_PBX_NODE_BUILD_MEMORY=768
-    elif [ "${mem_total_kb:-0}" -le 3145728 ]; then
+    if [ "${total_available_kb:-0}" -le 2097152 ]; then
         export FS_PBX_NODE_BUILD_MEMORY=1024
-    elif [ "${mem_total_kb:-0}" -le 6291456 ]; then
-        export FS_PBX_NODE_BUILD_MEMORY=1280
-    else
+    elif [ "${total_available_kb:-0}" -le 4194304 ]; then
         export FS_PBX_NODE_BUILD_MEMORY=1536
+    elif [ "${total_available_kb:-0}" -le 8388608 ]; then
+        export FS_PBX_NODE_BUILD_MEMORY=2048
+    else
+        export FS_PBX_NODE_BUILD_MEMORY=2560
     fi
 
     print_success "Configured Node build memory ceiling: ${FS_PBX_NODE_BUILD_MEMORY} MB."
@@ -1096,6 +1100,12 @@ fi
 print_success "Seeding the database and configuring FS PBX..."
 ensure_build_swap
 trap cleanup_build_swap EXIT
+
+if [ "$BUILD_SWAP_ENABLED" -eq 1 ] && [ "${FS_PBX_NODE_BUILD_MEMORY:-0}" -lt 1536 ]; then
+    export FS_PBX_NODE_BUILD_MEMORY=1536
+    export NODE_OPTIONS="--max-old-space-size=${FS_PBX_NODE_BUILD_MEMORY}"
+    print_warn "Temporary swap enabled. Raising Node build memory ceiling to ${FS_PBX_NODE_BUILD_MEMORY} MB for frontend compilation."
+fi
 
 # Navigate to Laravel project directory
 cd /var/www/fspbx

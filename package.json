@@ -2,7 +2,10 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "node scripts/build-production.mjs",
+        "build:all": "vite build",
+        "build:classic": "node scripts/build-production.mjs classic",
+        "build:inertia": "node scripts/build-production.mjs inertia"
     },
     "devDependencies": {
         "@popperjs/core": "^2.11.8",

@@ -3,7 +3,7 @@
     <head>
         @include('layouts.shared/title-meta', ['title' => $title ?? null])
         @include('layouts.shared/head-css', ['mode' => $mode ?? '', 'demo' => $demo ?? ''])
-        @vite(['resources/js/app.js','resources/js/hyper-head.js', 'resources/js/hyper-config.js'])
+        @vite(['resources/js/classic.js','resources/js/hyper-head.js', 'resources/js/hyper-config.js'])
     </head>
 
     <body class="loading" data-layout="topnav" data-layout-config='{"layoutBoxed":false,"darkMode":false,"showRightSidebarOnStart": false}' >

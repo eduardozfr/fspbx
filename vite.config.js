@@ -9,12 +9,51 @@ const VITE_HOST = process.env.VITE_HOST || 'localhost';
 const VITE_PORT = process.env.VITE_PORT || 3000;
 const VITE_ORIGIN = process.env.VITE_ORIGIN;
 const LIGHT_BUILD = ['1', 'true', 'yes'].includes(String(process.env.FS_PBX_VITE_LIGHT_BUILD || '').toLowerCase());
+const BUILD_TARGET = String(process.env.FS_PBX_VITE_BUILD_TARGET || 'all').toLowerCase();
+const EMPTY_OUT_DIR = !['0', 'false', 'no'].includes(String(process.env.FS_PBX_VITE_EMPTY_OUT_DIR || (BUILD_TARGET === 'inertia' ? '0' : '1')).toLowerCase());
 const SASS_SILENCE_DEPRECATIONS = String(
     process.env.FS_PBX_SASS_SILENCE_DEPRECATIONS || 'legacy-js-api,import,global-builtin,color-functions,mixed-decls'
 )
     .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
+const CLASSIC_PATHS = [
+    'resources/js/classic.js',
+    'resources/js/hyper-head.js',
+    'resources/js/hyper-config.js',
+    'resources/js/hyper-main.js',
+    'resources/js/ui/component.toastr.js',
+    'resources/scss/app-modern.scss',
+    'resources/scss/icons.scss',
+];
+const INERTIA_PATHS = [
+    'resources/js/vue.js',
+    'resources/scss/tailwind.css',
+];
+
+function resolveBuildInputs() {
+    if (BUILD_TARGET === 'classic') {
+        return [...CLASSIC_PATHS];
+    }
+
+    if (BUILD_TARGET === 'inertia') {
+        return [...INERTIA_PATHS];
+    }
+
+    return [...CLASSIC_PATHS, ...INERTIA_PATHS];
+}
+
+function resolveManifestFileName() {
+    if (BUILD_TARGET === 'classic') {
+        return 'manifest-classic.json';
+    }
+
+    if (BUILD_TARGET === 'inertia') {
+        return 'manifest-inertia.json';
+    }
+
+    return 'manifest.json';
+}
 
 function resolveManualChunk(id) {
     if (!id.includes('node_modules')) {
@@ -71,40 +110,9 @@ async function getConfig() {
     console.log('Vite configured port:', VITE_PORT);
     console.log('Vite configured CORS origin:', VITE_ORIGIN);
     console.log('Vite light build enabled:', LIGHT_BUILD);
+    console.log('Vite build target:', BUILD_TARGET);
 
-    const paths = [
-
-        "resources/js/app.js",
-        "resources/js/vue.js",
-
-        // css
-        'resources/scss/tailwind.css',
-        "resources/scss/app-modern.scss",
-        "resources/scss/icons.scss",
-        "node_modules/daterangepicker/daterangepicker.css",
-        "node_modules/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css",
-        "node_modules/select2/dist/css/select2.min.css",
-        "node_modules/jquery-toast-plugin/dist/jquery.toast.min.css",
-        "node_modules/britecharts/dist/css/britecharts.min.css",
-        "node_modules/bootstrap-timepicker/css/bootstrap-timepicker.min.css",
-
-        // js
-        "resources/js/hyper-head.js",
-        "resources/js/hyper-config.js",
-        "resources/js/hyper-main.js",
-        // "resources/js/hyper-layout.js",
-        "resources/js/hyper-syntax.js",
-        // "resources/js/ui/component.todo.js",
-        // "resources/js/ui/component.fileupload.js",
-        // "resources/js/ui/component.dragula.js",
-        // "resources/js/ui/component.chat.js",
-        "resources/js/ui/component.toastr.js",
-        "node_modules/daterangepicker/daterangepicker.js",
-        // "resources/js/ui/component.range-slider.js",
-        // "resources/js/ui/component.rating.js",
-    ];
-
-    const allPaths = await collectModuleAssetsPaths(paths, 'Modules');
+    const allPaths = await collectModuleAssetsPaths(resolveBuildInputs(), 'Modules');
 
 
     const keyPath = '/etc/nginx/ssl/private/privkey.pem'
@@ -166,7 +174,8 @@ async function getConfig() {
         ],
         build: {
             outDir: 'storage/app/public/vite',
-            emptyOutDir: true,
+            manifest: resolveManifestFileName(),
+            emptyOutDir: EMPTY_OUT_DIR,
             sourcemap: false,
             reportCompressedSize: false,
             assetsInlineLimit: LIGHT_BUILD ? 0 : undefined,
@@ -178,7 +187,7 @@ async function getConfig() {
             rollupOptions: {
                 treeshake: LIGHT_BUILD ? false : undefined,
                 output: {
-                    manualChunks: resolveManualChunk,
+                    manualChunks: LIGHT_BUILD ? undefined : resolveManualChunk,
                 },
             },
         },

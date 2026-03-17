@@ -8,67 +8,34 @@ import { ref, watch, computed } from 'vue'
 import { VAceEditor } from 'vue3-ace-editor'
 import ace from 'ace-builds'
 
-// If you prefer serving ACE assets yourself, you can also set a basePath:
-// ace.config.set('basePath', '/ace'); // make sure assets are available at this path
+const aceBasePath = '/vendor/ace'
+ace.config.set('basePath', aceBasePath)
 
-// --- Modes ---
-import modeXmlUrl from 'ace-builds/src-noconflict/mode-xml?url'
-ace.config.setModuleUrl('ace/mode/xml', modeXmlUrl)
+function configureAceModule(type, name, fileName = `${type}-${name}.js`) {
+    ace.config.setModuleUrl(`ace/${type}/${name}`, `${aceBasePath}/${fileName}`)
+}
 
-import modeYamlUrl from 'ace-builds/src-noconflict/mode-yaml?url'
-ace.config.setModuleUrl('ace/mode/yaml', modeYamlUrl)
-
-import modeLuaUrl from 'ace-builds/src-noconflict/mode-lua?url'
-ace.config.setModuleUrl('ace/mode/lua', modeLuaUrl)
-
-import modePhpUrl from 'ace-builds/src-noconflict/mode-php?url'
-ace.config.setModuleUrl('ace/mode/php', modePhpUrl)
-
-import modePhpBladeUrl from 'ace-builds/src-noconflict/mode-php_laravel_blade?url'
-ace.config.setModuleUrl('ace/mode/php_laravel_blade', modePhpBladeUrl)
-
-
-// --- Themes ---
-import themeChromeUrl from 'ace-builds/src-noconflict/theme-chrome?url'
-ace.config.setModuleUrl('ace/theme/chrome', themeChromeUrl)
-
-import themeGithubUrl from 'ace-builds/src-noconflict/theme-one_dark?url'
-ace.config.setModuleUrl('ace/theme/one_dark', themeGithubUrl)
-
-// --- Workers ---
-import workerBaseUrl from 'ace-builds/src-noconflict/worker-base?url'
-ace.config.setModuleUrl('ace/mode/base', workerBaseUrl)
-
-import workerXmlUrl from 'ace-builds/src-noconflict/worker-xml?url'
-ace.config.setModuleUrl('ace/mode/xml_worker', workerXmlUrl)
-
-import workerYamlUrl from 'ace-builds/src-noconflict/worker-yaml?url'
-ace.config.setModuleUrl('ace/mode/yaml_worker', workerYamlUrl)
-
-import workerLuaUrl from 'ace-builds/src-noconflict/worker-lua?url'
-ace.config.setModuleUrl('ace/mode/lua_worker', workerLuaUrl)
-
-import workerPhpUrl from 'ace-builds/src-noconflict/worker-php?url'
-ace.config.setModuleUrl('ace/mode/php_worker', workerPhpUrl)
-
-// --- Snippets ---
-import snippetsHtmlUrl from 'ace-builds/src-noconflict/snippets/html?url'
-ace.config.setModuleUrl('ace/snippets/html', snippetsHtmlUrl)
-
-import snippetsXmlUrl from 'ace-builds/src-noconflict/snippets/xml?url'
-ace.config.setModuleUrl('ace/snippets/xml', snippetsXmlUrl)
-
-import snippetsYamlUrl from 'ace-builds/src-noconflict/snippets/yaml?url'
-ace.config.setModuleUrl('ace/snippets/yaml', snippetsYamlUrl)
-
-import snippetsPhpUrl from 'ace-builds/src-noconflict/snippets/php?url'
-ace.config.setModuleUrl('ace/snippets/php', snippetsPhpUrl)
-
-// Searchbox
-import extSearchboxUrl from 'ace-builds/src-noconflict/ext-searchbox?url';
-ace.config.setModuleUrl('ace/ext/searchbox', extSearchboxUrl);
-// Language tools (autocomplete/snippets)
-import 'ace-builds/src-noconflict/ext-language_tools'
+configureAceModule('mode', 'xml')
+configureAceModule('mode', 'yaml')
+configureAceModule('mode', 'lua')
+configureAceModule('mode', 'php')
+configureAceModule('mode', 'php_laravel_blade')
+configureAceModule('mode', 'javascript')
+configureAceModule('theme', 'chrome')
+configureAceModule('theme', 'one_dark')
+ace.config.setModuleUrl('ace/mode/base', `${aceBasePath}/worker-base.js`)
+ace.config.setModuleUrl('ace/mode/xml_worker', `${aceBasePath}/worker-xml.js`)
+ace.config.setModuleUrl('ace/mode/yaml_worker', `${aceBasePath}/worker-yaml.js`)
+ace.config.setModuleUrl('ace/mode/lua_worker', `${aceBasePath}/worker-lua.js`)
+ace.config.setModuleUrl('ace/mode/php_worker', `${aceBasePath}/worker-php.js`)
+ace.config.setModuleUrl('ace/mode/javascript_worker', `${aceBasePath}/worker-javascript.js`)
+configureAceModule('snippets', 'html')
+configureAceModule('snippets', 'xml')
+configureAceModule('snippets', 'yaml')
+configureAceModule('snippets', 'php')
+configureAceModule('snippets', 'javascript')
+configureAceModule('ext', 'searchbox', 'ext-searchbox.js')
+configureAceModule('ext', 'language_tools', 'ext-language_tools.js')
 ace.require('ace/ext/language_tools')
 
 // Props
@@ -79,9 +46,6 @@ const props = defineProps({
     options: { type: Object, default: () => ({}) },
     height: { type: [Number, String], default: 400 },
 })
-
-import themeUrl from 'ace-builds/src-noconflict/theme-chrome?url'
-ace.config.setModuleUrl('ace/theme/chrome', themeUrl)
 
 // Emit
 const emit = defineEmits(['update:modelValue'])

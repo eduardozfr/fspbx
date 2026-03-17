@@ -348,6 +348,7 @@ class FSPBXInitialDBSeed extends Command
         return [
             'CI' => 'true',
             'FS_PBX_VITE_LIGHT_BUILD' => getenv('FS_PBX_VITE_LIGHT_BUILD') ?: '1',
+            'FS_PBX_SASS_SILENCE_DEPRECATIONS' => getenv('FS_PBX_SASS_SILENCE_DEPRECATIONS') ?: 'legacy-js-api,import,global-builtin,color-functions,mixed-decls',
             'NODE_OPTIONS' => '--max-old-space-size=' . $this->resolveNodeBuildMemoryLimit(),
         ];
     }
@@ -360,25 +361,27 @@ class FSPBXInitialDBSeed extends Command
             return $configuredLimit;
         }
 
-        $systemMemoryMb = $this->detectSystemMemoryMb();
-        if ($systemMemoryMb !== null) {
-            if ($systemMemoryMb <= 1536) {
-                return 768;
-            }
+        $memoryProfile = $this->detectMemoryProfile();
+        if ($memoryProfile !== null) {
+            $totalAvailableMb = $memoryProfile['ram'] + $memoryProfile['swap'];
 
-            if ($systemMemoryMb <= 3072) {
+            if ($totalAvailableMb <= 2048) {
                 return 1024;
             }
 
-            if ($systemMemoryMb <= 6144) {
-                return 1280;
+            if ($totalAvailableMb <= 4096) {
+                return 1536;
+            }
+
+            if ($totalAvailableMb <= 8192) {
+                return 2048;
             }
         }
 
         return 1536;
     }
 
-    private function detectSystemMemoryMb(): ?int
+    private function detectMemoryProfile(): ?array
     {
         if (!is_readable('/proc/meminfo')) {
             return null;
@@ -389,11 +392,16 @@ class FSPBXInitialDBSeed extends Command
             return null;
         }
 
-        if (!preg_match('/^MemTotal:\s+(\d+)\s+kB$/m', $meminfo, $matches)) {
+        if (!preg_match('/^MemTotal:\s+(\d+)\s+kB$/m', $meminfo, $memoryMatches)) {
             return null;
         }
 
-        return (int) floor(((int) $matches[1]) / 1024);
+        preg_match('/^SwapTotal:\s+(\d+)\s+kB$/m', $meminfo, $swapMatches);
+
+        return [
+            'ram' => (int) floor(((int) $memoryMatches[1]) / 1024),
+            'swap' => (int) floor(((int) ($swapMatches[1] ?? 0)) / 1024),
+        ];
     }
 
     private function runNpmBuildWithFallback(array $npmEnvironment): void
@@ -413,7 +421,7 @@ class FSPBXInitialDBSeed extends Command
         echo "\r";
         $this->warn('Frontend build hit memory pressure. Retrying once in ultra-light mode...');
 
-        $fallbackProcess = $this->runBuildProcess($this->buildUltraLightNpmEnvironment($npmEnvironment));
+        $fallbackProcess = $this->runBuildProcess($this->buildUltraLightNpmEnvironment($npmEnvironment, $buildProcess));
         if (!$fallbackProcess->isSuccessful()) {
             throw new ProcessFailedException($fallbackProcess);
         }
@@ -456,19 +464,47 @@ class FSPBXInitialDBSeed extends Command
         ]);
     }
 
-    private function buildUltraLightNpmEnvironment(array $npmEnvironment): array
+    private function buildUltraLightNpmEnvironment(array $npmEnvironment, ?Process $failedProcess = null): array
     {
         $npmEnvironment['FS_PBX_VITE_LIGHT_BUILD'] = '1';
         $npmEnvironment['FS_PBX_SASS_SILENCE_DEPRECATIONS'] = 'legacy-js-api,import,global-builtin,color-functions,mixed-decls';
 
-        $fallbackMemoryLimit = $this->resolveNodeBuildMemoryLimit();
-        if ($fallbackMemoryLimit > 1024) {
-            $fallbackMemoryLimit = 1024;
-        }
+        $fallbackMemoryLimit = $this->resolveFallbackNodeBuildMemoryLimit($npmEnvironment, $failedProcess);
 
         $npmEnvironment['NODE_OPTIONS'] = '--max-old-space-size=' . $fallbackMemoryLimit;
 
         return $npmEnvironment;
+    }
+
+    private function resolveFallbackNodeBuildMemoryLimit(array $npmEnvironment, ?Process $failedProcess = null): int
+    {
+        $currentLimit = $this->extractNodeBuildMemoryLimit($npmEnvironment);
+        $recommendedLimit = $this->resolveNodeBuildMemoryLimit();
+        $fallbackMemoryLimit = max($currentLimit, $recommendedLimit, 1536);
+
+        $combinedOutput = Str::lower(($failedProcess?->getOutput() ?? '') . "\n" . ($failedProcess?->getErrorOutput() ?? ''));
+        if (Str::contains($combinedOutput, [
+            'heap out of memory',
+            'reached heap limit',
+            'allocation failed',
+        ])) {
+            $fallbackMemoryLimit = max($fallbackMemoryLimit, min($currentLimit + 512, 2048));
+        }
+
+        return min($fallbackMemoryLimit, 2048);
+    }
+
+    private function extractNodeBuildMemoryLimit(array $npmEnvironment): int
+    {
+        if (!isset($npmEnvironment['NODE_OPTIONS'])) {
+            return $this->resolveNodeBuildMemoryLimit();
+        }
+
+        if (preg_match('/--max-old-space-size=(\d+)/', $npmEnvironment['NODE_OPTIONS'], $matches)) {
+            return (int) $matches[1];
+        }
+
+        return $this->resolveNodeBuildMemoryLimit();
     }
 
     private function ensureModuleStatusesFile(): void
