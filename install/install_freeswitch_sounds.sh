@@ -21,8 +21,10 @@ PT_BR_SOUND_VOICE="${FS_PBX_FREESWITCH_SOUND_VOICE:-karina}"
 PT_BR_SOUND_LANGUAGE="${FS_PBX_FREESWITCH_SOUND_LANGUAGE:-pt}"
 PT_BR_SOUND_DIALECT="${FS_PBX_FREESWITCH_SOUND_DIALECT:-BR}"
 PT_BR_SOUND_VERSION="${FS_PBX_FREESWITCH_SOUND_VERSION:-1.0.51}"
+MOH_VERSION="${FS_PBX_FREESWITCH_MOH_VERSION:-1.0.52}"
 RESOLVED_PTBR_SOUND_VERSION=""
 RESOLVED_PTBR_ARCHIVE_DIALECT=""
+RESOLVED_MOH_VERSION=""
 
 build_unique_list() {
     local item
@@ -67,10 +69,60 @@ mapfile -t PT_BR_SOUND_VERSION_CANDIDATES < <(
         1.0.53
 )
 
+mapfile -t MOH_VERSION_CANDIDATES < <(
+    build_unique_list \
+        "${MOH_VERSION}" \
+        ${FS_PBX_FREESWITCH_MOH_VERSION_CANDIDATES:-} \
+        1.0.52 \
+        1.0.51 \
+        1.0.53
+)
+
 print_success "Installing FreeSWITCH Sounds..."
 
 # Change working directory to FreeSWITCH source
 cd /usr/src/freeswitch
+
+download_archive() {
+    local archive_name="$1"
+    local target_dir="$2"
+    local temp_dir
+    local archive_path
+    local url
+
+    mkdir -p "$target_dir"
+
+    temp_dir=$(mktemp -d)
+    archive_path="${temp_dir}/${archive_name}"
+
+    for url in \
+        "https://files.freeswitch.org/releases/sounds/${archive_name}" \
+        "https://files.freeswitch.org/${archive_name}"
+    do
+        print_success "Fetching ${archive_name} from ${url}..."
+
+        if command -v curl >/dev/null 2>&1; then
+            if curl -fsSL --retry 3 --retry-delay 2 -o "$archive_path" "$url"; then
+                tar -xzf "$archive_path" -C "$target_dir"
+                rm -rf "$temp_dir"
+                return 0
+            fi
+        elif command -v wget >/dev/null 2>&1; then
+            if wget -q -O "$archive_path" "$url"; then
+                tar -xzf "$archive_path" -C "$target_dir"
+                rm -rf "$temp_dir"
+                return 0
+            fi
+        else
+            rm -rf "$temp_dir"
+            print_error "Neither curl nor wget is available to download ${archive_name}."
+            return 1
+        fi
+    done
+
+    rm -rf "$temp_dir"
+    return 1
+}
 
 install_ptbr_sound_archive() {
     local sample_rate="$1"
@@ -78,13 +130,7 @@ install_ptbr_sound_archive() {
     local archive_dialect="$3"
     local archive_name="freeswitch-sounds-${PT_BR_SOUND_LANGUAGE}-${archive_dialect}-${PT_BR_SOUND_VOICE}-${sample_rate}-${version}.tar.gz"
 
-    if [ ! -x "/usr/src/freeswitch/build/getsounds.sh" ]; then
-        print_error "FreeSWITCH getsounds helper was not found at /usr/src/freeswitch/build/getsounds.sh."
-        return 1
-    fi
-
-    print_success "Fetching ${archive_name}..."
-    /usr/src/freeswitch/build/getsounds.sh "$archive_name" /usr/share/freeswitch/sounds/
+    download_archive "$archive_name" "/usr/share/freeswitch/sounds"
 }
 
 install_required_ptbr_sound_set() {
@@ -132,6 +178,42 @@ install_optional_ptbr_sound_rates() {
             print_warn "Optional PT-BR sound rate ${sample_rate} is not available on this mirror. Continuing with the base prompt set."
         fi
     done
+}
+
+install_moh_archive() {
+    local sample_rate="$1"
+    local version="$2"
+    local archive_name="freeswitch-sounds-music-${sample_rate}-${version}.tar.gz"
+
+    download_archive "$archive_name" "/usr/share/freeswitch/sounds"
+}
+
+install_moh_sound_set() {
+    local version
+    local sample_rate
+
+    for version in "${MOH_VERSION_CANDIDATES[@]}"; do
+        print_success "Trying music-on-hold package version ${version}..."
+
+        if install_moh_archive 8000 "$version"; then
+            RESOLVED_MOH_VERSION="$version"
+
+            for sample_rate in 16000 32000 48000; do
+                if install_moh_archive "$sample_rate" "$version"; then
+                    print_success "Installed optional music-on-hold rate ${sample_rate}."
+                else
+                    print_warn "Optional music-on-hold rate ${sample_rate} is not available on this mirror. Continuing with the installed music set."
+                fi
+            done
+
+            print_success "Music-on-hold set installed successfully with version ${version}."
+            return 0
+        fi
+
+        print_warn "Music-on-hold package version ${version} could not be installed. Trying the next candidate..."
+    done
+
+    return 1
 }
 
 detect_installed_ptbr_dialect() {
@@ -187,9 +269,10 @@ install_required_ptbr_sound_set || {
 install_optional_ptbr_sound_rates
 
 print_success "Downloading and installing default FreeSWITCH music on hold..."
-make moh-install
-make hd-moh-install
-make cd-moh-install
+install_moh_sound_set || {
+    print_error "Unable to install the FreeSWITCH music-on-hold set from the available package candidates."
+    exit 1
+}
 
 # Ensure music directory exists before moving files
 mkdir -p /usr/share/freeswitch/sounds/music/default
